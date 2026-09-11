@@ -19,6 +19,8 @@ import { BackHandler, LogBox, StatusBar } from 'react-native';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import AppErrorBoundary from './AppErrorBoundary';
 import BiometricBlankingOverlay from '@ui/widgets/BiometricBlankingOverlay';
+import CorePending from '@screens/CorePending';
+import { WcashProduct } from '@app/product/WcashProduct';
 
 LogBox.ignoreLogs([
   '[Reanimated] Reduced motion setting is enabled on this device.',
@@ -54,31 +56,31 @@ const AppShell: React.FunctionComponent = () => {
         <SafeAreaProvider>
           <StatusBar backgroundColor={colors.bgCanvas} />
           <BiometricBlankingOverlay />
-          <NavigationContainer ref={navigationRef} theme={theme}>
-            <SafeAreaView
-              edges={['top', 'left', 'right']}
-              style={{
-                flex: 1,
-                backgroundColor: colors.bgCanvas,
-                // The system safe-area top inset includes a visual buffer
-                // beyond the status bar / notch. We reclaim 10px of that
-                // buffer so the Header (and everything below) sits closer
-                // to the system chrome without overlapping it. Verified
-                // safe on both iOS and Android.
-                marginTop: -10,
-              }}
-            >
-              <Stack.Navigator
-                initialRouteName={RouteEnum.LoadingApp}
-                screenOptions={{ headerShown: false, animation: 'none' }}
+          {WcashProduct.walletCoreReady ? (
+            <NavigationContainer ref={navigationRef} theme={theme}>
+              <SafeAreaView
+                edges={['top', 'left', 'right']}
+                style={{
+                  flex: 1,
+                  backgroundColor: colors.bgCanvas,
+                  marginTop: -10,
+                }}
               >
-                <Stack.Screen name={RouteEnum.LoadingApp}>
-                  {props => <LoadingApp {...props} toggleTheme={toggleTheme} />}
-                </Stack.Screen>
-                <Stack.Screen name={RouteEnum.LoadedApp}>
-                  {props => <LoadedApp {...props} toggleTheme={toggleTheme} />}
-                </Stack.Screen>
-                {/* ScannerAddress lives at the root Stack (above LoadedApp,
+                <Stack.Navigator
+                  initialRouteName={RouteEnum.LoadingApp}
+                  screenOptions={{ headerShown: false, animation: 'none' }}
+                >
+                  <Stack.Screen name={RouteEnum.LoadingApp}>
+                    {props => (
+                      <LoadingApp {...props} toggleTheme={toggleTheme} />
+                    )}
+                  </Stack.Screen>
+                  <Stack.Screen name={RouteEnum.LoadedApp}>
+                    {props => (
+                      <LoadedApp {...props} toggleTheme={toggleTheme} />
+                    )}
+                  </Stack.Screen>
+                  {/* ScannerAddress lives at the root Stack (above LoadedApp,
                   therefore above the BottomSheetModalProvider portal). Without
                   this, any open BottomSheetModal renders ON TOP of the camera,
                   hiding the preview.
@@ -88,19 +90,27 @@ const AppShell: React.FunctionComponent = () => {
                   unresponsive for several seconds after the camera is
                   dismissed because iOS pauses the underlying scene during
                   the native modal presentation. */}
-                <Stack.Screen
-                  name={RouteEnum.ScannerAddress}
-                  component={ScannerAddress}
-                  options={{ presentation: 'transparentModal' }}
-                />
-                <Stack.Screen
-                  name={RouteEnum.ScannerUfvk}
-                  component={ScannerUfvk}
-                  options={{ presentation: 'transparentModal' }}
-                />
-              </Stack.Navigator>
+                  <Stack.Screen
+                    name={RouteEnum.ScannerAddress}
+                    component={ScannerAddress}
+                    options={{ presentation: 'transparentModal' }}
+                  />
+                  <Stack.Screen
+                    name={RouteEnum.ScannerUfvk}
+                    component={ScannerUfvk}
+                    options={{ presentation: 'transparentModal' }}
+                  />
+                </Stack.Navigator>
+              </SafeAreaView>
+            </NavigationContainer>
+          ) : (
+            <SafeAreaView
+              edges={['top', 'left', 'right', 'bottom']}
+              style={{ flex: 1, backgroundColor: colors.bgCanvas }}
+            >
+              <CorePending />
             </SafeAreaView>
-          </NavigationContainer>
+          )}
         </SafeAreaProvider>
       </KeyboardProvider>
     </AppErrorBoundary>

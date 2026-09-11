@@ -28,6 +28,7 @@ import {
 } from '@app/utils/ZingoAppData';
 import BoldText from '@ui/primitives/BoldText';
 import { useFullSheetSnapPoints } from '@app/hooks/useFullSheetSnapPoints';
+import { WcashProduct } from '@app/product/WcashProduct';
 
 type StartMenuProps = {
   actionButtonsDisabled: boolean;
@@ -88,10 +89,12 @@ const StartMenu: React.FunctionComponent<StartMenuProps> = ({
           onPress: () => changeMode(ModeEnum.advanced),
         });
       } else {
-        list.push({
-          label: translate('loadingapp.custom') as string,
-          onPress: () => customServer(),
-        });
+        if (WcashProduct.networkSelectionEnabled) {
+          list.push({
+            label: translate('loadingapp.custom') as string,
+            onPress: () => customServer(),
+          });
+        }
         if (hasBackupWallet) {
           list.push({
             label: translate('loadedapp.restorebackupwallet') as string,
@@ -232,44 +235,46 @@ const StartMenu: React.FunctionComponent<StartMenuProps> = ({
             paddingBottom: 30,
           }}
         >
-          {selectServer !== SelectServerEnum.offline && (
-            <>
-              <BoldText style={{ fontSize: 15, marginBottom: 3 }}>
-                {`${translate('loadingapp.actualserver') as string} [${
-                  translate(
-                    `settings.value-chainname-${server.chainName}`,
-                  ) as string
-                }]`}
-              </BoldText>
-              <BoldText style={{ fontSize: 15, marginBottom: 10 }}>
-                {server.uri}
-              </BoldText>
-            </>
-          )}
-          {selectServer === SelectServerEnum.offline && (
-            <>
-              <View style={{ flexDirection: 'row' }}>
+          {WcashProduct.networkSelectionEnabled &&
+            selectServer !== SelectServerEnum.offline && (
+              <>
                 <BoldText style={{ fontSize: 15, marginBottom: 3 }}>
-                  {translate('loadingapp.actualserver') as string}
+                  {`${translate('loadingapp.actualserver') as string} [${
+                    translate(
+                      `settings.value-chainname-${server.chainName}`,
+                    ) as string
+                  }]`}
                 </BoldText>
-                <BoldText
-                  style={{ fontSize: 15, marginBottom: 3, color: 'red' }}
-                >
-                  {' ' + (translate('settings.server-offline') as string)}
+                <BoldText style={{ fontSize: 15, marginBottom: 10 }}>
+                  {server.uri}
                 </BoldText>
-              </View>
-              {/* Offline has no server URI, but the chain is still configured
+              </>
+            )}
+          {WcashProduct.networkSelectionEnabled &&
+            selectServer === SelectServerEnum.offline && (
+              <>
+                <View style={{ flexDirection: 'row' }}>
+                  <BoldText style={{ fontSize: 15, marginBottom: 3 }}>
+                    {translate('loadingapp.actualserver') as string}
+                  </BoldText>
+                  <BoldText
+                    style={{ fontSize: 15, marginBottom: 3, color: 'red' }}
+                  >
+                    {' ' + (translate('settings.server-offline') as string)}
+                  </BoldText>
+                </View>
+                {/* Offline has no server URI, but the chain is still configured
                   (create/restore derive keys chain-specifically). Show the same
                   [Network] label the other modes display. */}
-              <BoldText style={{ fontSize: 15, marginBottom: 10 }}>
-                {`[${
-                  translate(
-                    `settings.value-chainname-${server.chainName}`,
-                  ) as string
-                }]`}
-              </BoldText>
-            </>
-          )}
+                <BoldText style={{ fontSize: 15, marginBottom: 10 }}>
+                  {`[${
+                    translate(
+                      `settings.value-chainname-${server.chainName}`,
+                    ) as string
+                  }]`}
+                </BoldText>
+              </>
+            )}
 
           {(!netInfo.isConnected ||
             netInfo.type === NetInfoStateType.cellular ||

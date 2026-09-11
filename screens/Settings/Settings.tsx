@@ -103,6 +103,7 @@ import NymOff from '../../assets/img/nym-off.svg';
 import NymSwitchOn from '../../assets/img/nym-switch-on.svg';
 import SwitchOff from '../../assets/img/switch-off.svg';
 import SettingSwitchOn from '../../assets/img/setting-switch-on.svg';
+import { WcashProduct } from '@app/product/WcashProduct';
 
 type SettingsProps = NativeStackScreenProps<
   AppDrawerParamList,
@@ -2044,78 +2045,79 @@ const Settings: React.FunctionComponent<SettingsProps> = ({
                 </View>
               )}
 
-              {mode !== ModeEnum.basic && (
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    marginLeft: 25,
-                    marginRight: 25,
-                    marginVertical: 15,
-                  }}
-                >
-                  <BoldText>
-                    {translate('settings.server-title') as string}
-                  </BoldText>
-                  <TouchableOpacity
-                    disabled={disabled}
-                    onPress={() => serverBottomSheetRef.current?.present()}
-                    style={{ flex: 1, marginLeft: 12 }}
+              {WcashProduct.networkSelectionEnabled &&
+                mode !== ModeEnum.basic && (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginLeft: 25,
+                      marginRight: 25,
+                      marginVertical: 15,
+                    }}
                   >
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'flex-end',
-                      }}
+                    <BoldText>
+                      {translate('settings.server-title') as string}
+                    </BoldText>
+                    <TouchableOpacity
+                      disabled={disabled}
+                      onPress={() => serverBottomSheetRef.current?.present()}
+                      style={{ flex: 1, marginLeft: 12 }}
                     >
                       <View
                         style={{
-                          flex: 1,
-                          alignItems: 'flex-end',
-                          marginRight: 8,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'flex-end',
                         }}
                       >
-                        {selectServer !== SelectServerEnum.offline && (
-                          <FadeText
+                        <View
+                          style={{
+                            flex: 1,
+                            alignItems: 'flex-end',
+                            marginRight: 8,
+                          }}
+                        >
+                          {selectServer !== SelectServerEnum.offline && (
+                            <FadeText
+                              numberOfLines={1}
+                              style={{
+                                fontSize: 11,
+                                lineHeight: 13,
+                                color: customServerIncomplete
+                                  ? colors.fgDangerEmphasis
+                                  : colors.fgMuted,
+                              }}
+                            >
+                              {currentServerKindLabel}
+                            </FadeText>
+                          )}
+                          <RegText
                             numberOfLines={1}
+                            ellipsizeMode="middle"
                             style={{
-                              fontSize: 11,
-                              lineHeight: 13,
+                              fontWeight: '400',
                               color: customServerIncomplete
                                 ? colors.fgDangerEmphasis
                                 : colors.fgMuted,
                             }}
                           >
-                            {currentServerKindLabel}
-                          </FadeText>
-                        )}
-                        <RegText
-                          numberOfLines={1}
-                          ellipsizeMode="middle"
-                          style={{
-                            fontWeight: '400',
-                            color: customServerIncomplete
+                            {currentServerLabel}
+                          </RegText>
+                        </View>
+                        <FontAwesomeIcon
+                          icon={faChevronRight}
+                          size={16}
+                          color={
+                            customServerIncomplete
                               ? colors.fgDangerEmphasis
-                              : colors.fgMuted,
-                          }}
-                        >
-                          {currentServerLabel}
-                        </RegText>
+                              : colors.fgMuted
+                          }
+                        />
                       </View>
-                      <FontAwesomeIcon
-                        icon={faChevronRight}
-                        size={16}
-                        color={
-                          customServerIncomplete
-                            ? colors.fgDangerEmphasis
-                            : colors.fgMuted
-                        }
-                      />
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              )}
+                    </TouchableOpacity>
+                  </View>
+                )}
 
               {mode !== ModeEnum.basic && (
                 <View

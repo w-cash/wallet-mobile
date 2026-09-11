@@ -115,6 +115,7 @@ import ImportUfvk from '@screens/ImportUfvk';
 import { sendEmail } from '@app/services/sendEmail';
 import { RPCWalletKindEnum } from '@app/walletBackend/enums/RPCWalletKindEnum';
 import StartMenu from '@screens/StartMenu';
+import { WcashProduct } from '@app/product/WcashProduct';
 import { RPCUfvkType } from '@app/walletBackend/types/RPCUfvkType';
 import { RPCPerformanceLevelEnum } from '@app/walletBackend/enums/RPCPerformanceLevelEnum';
 import NewSeed from '@screens/NewSeed';
@@ -2328,20 +2329,22 @@ export class LoadingAppClass extends Component<
                   restoreLastBackup={this.restoreLastBackup}
                 />
               )}
-              <CustomServerModalHost
-                ref={this.customServerModalRef}
-                actionButtonsDisabled={actionButtonsDisabled}
-                customServerOffline={customServerOffline}
-                onPressServerOffline={this.onPressServerOffline}
-                customServerAuto={customServerAuto}
-                onPressServerAuto={this.onPressServerAuto}
-                customServerChainName={customServerChainName}
-                onPressServerChainName={this.onPressServerChainName}
-                customServerUri={customServerUri}
-                setCustomServerUri={this.setCustomServerUri}
-                usingCustomServer={this.usingCustomServer}
-                translate={translate}
-              />
+              {WcashProduct.networkSelectionEnabled && (
+                <CustomServerModalHost
+                  ref={this.customServerModalRef}
+                  actionButtonsDisabled={actionButtonsDisabled}
+                  customServerOffline={customServerOffline}
+                  onPressServerOffline={this.onPressServerOffline}
+                  customServerAuto={customServerAuto}
+                  onPressServerAuto={this.onPressServerAuto}
+                  customServerChainName={customServerChainName}
+                  onPressServerChainName={this.onPressServerChainName}
+                  customServerUri={customServerUri}
+                  setCustomServerUri={this.setCustomServerUri}
+                  usingCustomServer={this.usingCustomServer}
+                  translate={translate}
+                />
+              )}
               {screen === RouteEnum.NewSeed && wallet && (
                 <NewSeed
                   wallet={this.state.wallet}
