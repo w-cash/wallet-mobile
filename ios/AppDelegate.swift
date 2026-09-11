@@ -75,8 +75,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
 
-  private let bcgTaskId = "Zingo_Processing_Task_ID"
-  private let bcgSchedulerTaskId = "Zingo_Processing_Scheduler_Task_ID"
+  private let bcgTaskId = "com.wcashwallet.warden.testnet.processing"
+  private let bcgSchedulerTaskId = "com.wcashwallet.warden.testnet.processing-scheduler"
   private var monitor: NWPathMonitor?
   private let workerQueue = DispatchQueue(label: "Monitor")
   private var isConnectedToWifi = false

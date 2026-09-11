@@ -1,6 +1,7 @@
 # Windows files should use crlf line endings
 # https://help.github.com/articles/dealing-with-line-endings/
 *.bat text eol=crlf
+android/app/build.gradle.kts text eol=crlf whitespace=cr-at-eol
 *.pbxproj -text
 saplingoutput binary
 saplingspend binary

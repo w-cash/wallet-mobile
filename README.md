@@ -1,48 +1,22 @@
-# Zingo Android and iOS apps
+# Wcash Warden Testnet for Android and iOS
 
-Zingo Mobile is a shielded Zcash light-client wallet for Android and iOS, built with React Native and powered by the [Zingolib](https://github.com/zingolabs/zingolib) Rust SDK.
+This fork starts at the official Zingo Mobile stable tag `zingo-2.0.23-317`, commit `bc9b47e0b3ccdd2735e7d381f1c76d58a8628b80`.
 
-App Store: [https://apps.apple.com/app/zingo/id1668209531](https://apps.apple.com/app/zingo/id1668209531)
+The current milestone assigns Wcash Testnet application, background-task, and secure-storage namespaces. The product gate holds wallet access until the reviewed Wcash core is pinned. It also removes inherited server selection and Zcash payment-link entry points from the product surface. The Rust workspace and UniFFI bindings remain at the upstream revision.
 
-Google Play: [https://play.google.com/store/apps/details?id=org.ZingoLabs.Zingo](https://play.google.com/store/apps/details?id=org.ZingoLabs.Zingo)
+The React Native module, Xcode target, Kotlin namespace, and native bridge class names retain their upstream identifiers.
 
 # Security Vulnerability Disclosure
 
-If you believe you have discovered a security issue, please contact us at:
-
-zingodisclosure@proton.me
+Report security issues with a private GitHub Security Advisory in the Wcash mobile repository.
 
 ## Building The App
 
  Please see the platform specific [iOS](./docs/ios_developer_quickstart.md) and [Android](./docs/android_developer_quickstart.md) "quickstart" documentation.
 
-## Releasing
+## Release status
 
-Zingo ships as two parallel apps from this repo:
-
-- **Production** (`org.ZingoLabs.Zingo`) — App Store + Play Production.
-- **Beta** (`org.ZingoLabs.Zingo.Beta`) — TestFlight External + Play Open Testing.
-
-Both share the same JS bundle and Rust libs; only the native shell differs
-(bundle ID, display name, icon with `BETA` band). Version/build bumps are
-scoped per channel via:
-
-```bash
-yarn release:prod:prep <version> <build>
-yarn release:beta:prep <version> <build>
-```
-
-Create the tag **before** rebuilding the Rust libs: the About screen shows a
-`git describe` descriptor baked into the native lib at cargo build time, so a
-`.so`/xcframework compiled before the tag ships advertising the previous one.
-See [Release order](./docs/release_quickstart.md#release-order-tag-first-then-rebuild-the-rust-libs).
-
-Pushing a `zingo-<version>-<build>` or `zingo-beta-<version>-<build>` tag
-triggers a CI workflow that builds the 4 ABI APKs + a universal APK from
-source on the tagged commit and publishes them to a fresh GitHub Release.
-
-Full step-by-step for both stores, signing setup, and the underlying iOS/Android
-flavor architecture: see [docs/release_quickstart.md](./docs/release_quickstart.md).
+The first Wcash release requires the reviewed wallet-core pin, approved application icons, the canonical Wcash payment URI, Android signing material, and an Apple development team. The inherited build channels support local engineering builds.
 
 ## Testing
 ### Prerequisites

@@ -5,9 +5,8 @@
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.transistorsoft.fetch</string>
-		<string>Zingo_Refresh_Task_ID</string>
-		<string>Zingo_Processing_Task_ID</string>
-		<string>Zingo_Processing_Scheduler_Task_ID</string>
+		<string>com.wcashwallet.warden.testnet.processing</string>
+		<string>com.wcashwallet.warden.testnet.processing-scheduler</string>
 	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
@@ -27,23 +26,10 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>zcash</string>
-			</array>
-		</dict>
-	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	<key>LSApplicationQueriesSchemes</key>
-	<string>zcash</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0.0</string>
 	<key>LSRequiresIPhoneOS</key>
@@ -56,13 +42,13 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Zingo needs access to the camera to scan address QRCodes</string>
+	<string>Wcash Warden Testnet uses the camera to scan address QR codes.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Allow Zingo to use FaceID to improve the security and privacy?</string>
+	<string>Allow Wcash Warden Testnet to use Face ID for wallet privacy.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Zingo does not use any Location Features</string>
+	<string>Wcash Warden Testnet does not use location features.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Zingo export/share address QRCodes as images</string>
+	<string>Wcash Warden Testnet saves and shares address QR codes.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
