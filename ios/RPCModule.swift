@@ -126,6 +126,18 @@ enum WalletFileFormat {
 
 @objc(RPCModule)
 class RPCModule: NSObject {
+
+  override init() {
+    super.init()
+    do {
+      // This symbol exists only in the Wcash UniFFI crate. Besides choosing
+      // the SQLite directory, it makes a mismatched upstream Zcash library a
+      // native link failure instead of a runtime fallback.
+      _ = try setWalletDirectory(directory: getDocumentsDirectory())
+    } catch {
+      assertionFailure("Wcash adapter selection failed: \(error)")
+    }
+  }
   
   @objc
   static func requiresMainQueueSetup() -> Bool {

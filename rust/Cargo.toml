@@ -1,6 +1,8 @@
 [workspace]
 members = [
     "lib",
+    "wcash-mobile-adapter",
+    "wcash-mobile-ffi",
     "android",
     "ios",
     "zingomobile_utils",
@@ -14,12 +16,13 @@ exclude = ["nym-proxy-ffi"]
 resolver = "2"
 
 [workspace.dependencies]
-zingolib = { git = "https://github.com/zingolabs/zingolib", tag = "zingolib_v6.0.0", features = [
+zingolib = { git = "https://github.com/w-cash/wallet-core.git", rev = "58bc22ec63bbe3eddab5f961c137836431589c95", features = [
     "nym",
     "perspective",
 ] }
-pepper-sync = { git = "https://github.com/zingolabs/zingolib", tag = "zingolib_v6.0.0" }
-zingolib_testutils = { git = "https://github.com/zingolabs/zingolib", tag = "zingolib_v6.0.0" }
+pepper-sync = { git = "https://github.com/w-cash/wallet-core.git", rev = "58bc22ec63bbe3eddab5f961c137836431589c95" }
+zingolib_testutils = { git = "https://github.com/w-cash/wallet-core.git", rev = "58bc22ec63bbe3eddab5f961c137836431589c95" }
+wcash-wallet = { git = "https://github.com/w-cash/wolf.git", rev = "5b4e29980eb45e84ddab9024f530c923986d7e1e" }
 regchest_utils = { git = "https://github.com/zingolabs/zingo-regchest", branch = "dev" }
 zingomobile_utils = { path = "zingomobile_utils" }
 
@@ -51,6 +54,10 @@ log = "0.4"
 uniffi_build = "0.29"
 thiserror = "1"
 once_cell = "1"
+bip0039 = { version = "0.14", features = ["rand"] }
+secrecy = "0.8"
+serde = { version = "1", features = ["derive"] }
+sha2 = "0.10"
 
 [profile.release]
 debug = 1
@@ -65,6 +72,11 @@ opt-level = 3
 debug = 1
 
 [patch.crates-io]
+# Wcash consensus domains and transaction parsing. These immutable revisions
+# match the selection audited by wallet-core and wolf.
+pczt = { git = "https://github.com/w-cash/wolf.git", rev = "9a9c0668784117f116d5b69bdb3a090765092343" }
+zcash_primitives = { git = "https://github.com/w-cash/wolf.git", rev = "9a9c0668784117f116d5b69bdb3a090765092343" }
+zcash_protocol = { git = "https://github.com/w-cash/wolf.git", rev = "9a9c0668784117f116d5b69bdb3a090765092343" }
 # Ironwood (NU6.3) proto fields (CompactTx.ironwoodActions, TreeState.ironwoodTree,
 # ShieldedProtocol.ironwood, ChainMetadata.ironwoodCommitmentTreeSize). Must match
 # the patch in zingolib (feat/ironwood) so the dependency graph resolves to a single

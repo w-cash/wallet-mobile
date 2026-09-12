@@ -22,7 +22,9 @@ const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_DIR = resolve(SCRIPTS_DIR, '..');
 const RUST_DIR = join(REPO_DIR, 'rust');
 const SHIM_DIR = join(RUST_DIR, 'nym-proxy-ffi');
-const UDL = join(RUST_DIR, 'lib', 'src', 'zingo.udl');
+// Wcash builds generate the same `uniffi.zingo` package from the additive
+// adapter UDL. The upstream UDL remains untouched for parity auditing.
+const UDL = join(RUST_DIR, 'wcash-mobile-ffi', 'src', 'zingo.udl');
 const OUT_ROOT = join(REPO_DIR, 'android', 'app', 'build', 'generated', 'source', 'uniffi');
 
 const exe = process.platform === 'win32' ? '.exe' : '';

@@ -489,6 +489,17 @@ export class DataService {
 
       this.config.onMessagesChanged(mList, mList.length);
     } catch (error) {
+      // The first Wcash core slice has no memo-detail contract. The native
+      // boundary rejects it explicitly; consume that capability result here
+      // so the ordinary five-second refresh does not recursively restart sync.
+      if (
+        String(error).includes(
+          'unsupported Wcash feature: memo message history',
+        )
+      ) {
+        this.config.onMessagesChanged([], 0);
+        return;
+      }
       console.log(`Critical Error value transfers messages ${error}`);
       this.config.onError(`Error value transfers messages: ${error}`);
       await this.onSyncError();
