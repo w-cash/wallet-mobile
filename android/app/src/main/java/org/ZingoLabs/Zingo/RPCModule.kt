@@ -547,7 +547,7 @@ class RPCModule internal constructor(private val reactContext: ReactApplicationC
             // (pass "0").
             val resp = uniffi.zingo.initNew(serveruri, birthday.toUInt(), chainhint, performancelevel, minconfirmations.toUInt())
             walletFileClosed = false
-            saveWalletFile()
+            requireDurableInitialWalletSave(saveWalletFile())
             resp
         }
     }
@@ -559,7 +559,7 @@ class RPCModule internal constructor(private val reactContext: ReactApplicationC
 
             val resp = uniffi.zingo.initFromSeed(seed, birthday.toUInt(), serveruri, chainhint, performancelevel, minconfirmations.toUInt())
             walletFileClosed = false
-            saveWalletFile()
+            requireDurableInitialWalletSave(saveWalletFile())
             resp
         }
     }
@@ -571,7 +571,7 @@ class RPCModule internal constructor(private val reactContext: ReactApplicationC
 
             val resp = uniffi.zingo.initFromUfvk(ufvk, birthday.toUInt(), serveruri, chainhint, performancelevel, minconfirmations.toUInt())
             walletFileClosed = false
-            saveWalletFile()
+            requireDurableInitialWalletSave(saveWalletFile())
             resp
         }
 }
@@ -701,11 +701,10 @@ class RPCModule internal constructor(private val reactContext: ReactApplicationC
         promise.resolve(deleted)
     }
 
-    // saveWalletFile/saveWalletBackupFile still contain their own failures
-    // as a resolved false (the init flows depend on a save failure not
-    // failing the whole init), so these shells resolve that boolean
-    // verbatim; only an escaping exception rejects. No outcome is ever
-    // re-encoded as prose in the success channel (zingo-mobile#1151).
+    // The explicit save shells preserve the upstream boolean contract.
+    // Wallet initialization promotes a first-save false to a rejection so
+    // it cannot report a wallet that will be absent after restart. No outcome
+    // is re-encoded as prose in the success channel (zingo-mobile#1151).
     @ReactMethod
     fun doSave(promise: Promise) {
         FfiOutcome.settling(promise, "save_wallet_bytes") {

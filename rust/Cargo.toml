@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "lib",
     "wcash-mobile-adapter",
     "wcash-mobile-ffi",
     "android",
@@ -10,22 +9,19 @@ members = [
     "uniffi-bindgen",
 ]
 
-# The mixnet proxy shim resolves in its own lockfile: nym-sdk's transitive
-# graph needs `crypto-common ^0.2`, irreconcilable with this workspace's pins.
-exclude = ["nym-proxy-ffi"]
+# The byte-identical upstream FFI and mixnet shim remain in the source tree for
+# provenance only. Wcash builds use wcash-mobile-ffi and must never compile
+# either legacy boundary.
+exclude = ["lib", "nym-proxy-ffi"]
 resolver = "2"
 
 [workspace.dependencies]
-zingolib = { git = "https://github.com/w-cash/wallet-core.git", rev = "58bc22ec63bbe3eddab5f961c137836431589c95", features = [
-    "nym",
+zingolib = { git = "https://github.com/w-cash/wallet-core.git", rev = "d10113e19c712a403c1b68947c2186e97f61f854", features = [
     "perspective",
 ] }
-pepper-sync = { git = "https://github.com/w-cash/wallet-core.git", rev = "58bc22ec63bbe3eddab5f961c137836431589c95" }
-zingolib_testutils = { git = "https://github.com/w-cash/wallet-core.git", rev = "58bc22ec63bbe3eddab5f961c137836431589c95" }
-# Corrective integration uses the reviewed local proposal split at
-# 8f61c6a36e5eca756d93ba02ec5567fb03c8b312. Replace this workspace path with
-# that immutable remote revision immediately after it is published.
-wcash-wallet = { path = "/Users/rustdev/Documents/Codex/2026-09-12/weh/work/Wcash/wolf-cli-proposal/wcash-wallet" }
+pepper-sync = { git = "https://github.com/w-cash/wallet-core.git", rev = "d10113e19c712a403c1b68947c2186e97f61f854" }
+zingolib_testutils = { git = "https://github.com/w-cash/wallet-core.git", rev = "d10113e19c712a403c1b68947c2186e97f61f854" }
+wcash-wallet = { git = "https://github.com/w-cash/wolf.git", rev = "168b59310056964a6347ed993ace8f8d1385cde1" }
 regchest_utils = { git = "https://github.com/zingolabs/zingo-regchest", branch = "dev" }
 zingomobile_utils = { path = "zingomobile_utils" }
 
@@ -87,10 +83,3 @@ zcash_protocol = { git = "https://github.com/w-cash/wolf.git", rev = "9a9c066878
 # the patch in zingolib (feat/ironwood) so the dependency graph resolves to a single
 # ironwood-aware lightwallet-protocol.
 lightwallet-protocol = { git = "https://github.com/zingolabs/lightwallet-protocol-rust", rev = "9bdfdc77eb283f2a3d26c27100cc2ac90148cd93" }
-
-# Local-only corrective validation: force wallet-core's transitive runtime to
-# the same reviewed Wolf boundary as the additive mobile adapter. Replace this
-# path patch and the direct path above with the published immutable revisions
-# before any release candidate is permitted.
-[patch."https://github.com/w-cash/wolf.git"]
-wcash-wallet = { path = "/Users/rustdev/Documents/Codex/2026-09-12/weh/work/Wcash/wolf-cli-proposal/wcash-wallet" }

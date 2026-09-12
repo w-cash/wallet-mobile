@@ -124,7 +124,7 @@ export default class Utils {
   static getDonationAmount(): string {
     const { decimalSeparator } = getNumberFormatSettings();
 
-    return '0' + decimalSeparator + '00';
+    return '0' + decimalSeparator + '01';
   }
 
   static getDonationMemo(translate: (key: string) => TranslateType): string {
@@ -141,7 +141,7 @@ export default class Utils {
   static getZenniesDonationAmount(): string {
     const { decimalSeparator } = getNumberFormatSettings();
 
-    return '0' + decimalSeparator + '00';
+    return '0' + decimalSeparator + '01';
   }
 
   // NYM

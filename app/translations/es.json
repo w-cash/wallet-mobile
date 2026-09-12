@@ -29,11 +29,11 @@
   "save": "Guardar",
   "copy": "Copiar",
   "confirm": "Confirmar",
-  "support": "Abrir soporte",
+  "support": "Enviar Email",
   "view-error": "Ver/Informar Error",
   "menudrawer-acc": "Abrir Menú Lateral",
-  "donation": "Las donaciones de desarrollo no están disponibles en esta compilación de Wcash Wallet.",
-  "zenny-tips-ab": "Donaciones de desarrollo",
+  "donation": "¡Donación a Wcash Wallet!\n¡Gracias por apoyar a Wcash Wallet!",
+  "zenny-tips-ab": "Zenny Propinas",
   "restarting": "Error conectando con el servidor, la Aplicación se reiniciará en breves segundos.",
   "change-privacy": "Nueva Política de Privacidad: ",
   "email": "https://github.com/w-cash/wallet-mobile/issues",
@@ -155,8 +155,8 @@
     "alert-newwallet-body": "Puedes confirmar que realmente quieres crear un nuevo monedero y perder el acceso al monedero actual.",
     "serverfirsttry": "Se produjo un error al intentar conectarse al servidor activo, actualmente verificando los servidores en la lista.",
     "serversecondtry": "No parece haber ningún problema con el servidor. Ocurre algo diferente.",
-    "alert-donation-title": "DONACIONES NO DISPONIBLES",
-    "alert-donation-body": "Las donaciones de desarrollo no están disponibles en esta compilación de Wcash Wallet.",
+    "alert-donation-title": "APOYAR A WCASH WALLET",
+    "alert-donation-body": "¿Quieres ayudar a Wcash Wallet a que Wcash sea más útil? Opta por dar una propina de un Zenny (0.01 WEC) a Wcash Wallet con cada transacción! Si es así, presione confirmar, de lo contrario presione Cancelar.",
     "recoverkeys": "Recuperar la última Clave usada",
     "recoverkeysinstall": "Se recuperó la última Clave usada en este dispositivo:",
     "customserver-unreachable": "Tu servidor personalizado no respondió y la billetera devolvió un error. Abre Ajustes para elegir otro o reintenta más tarde.",
@@ -179,8 +179,8 @@
     "insight": "Visión Financiera",
     "loadwalletfromseed-basic": "Restaurar otro monedero",
     "addressbook": "Libreta de Direcciones",
-    "tipzingolabs-basic": "Donaciones de desarrollo",
-    "support": "Wcash Wallet support",
+    "tipzingolabs-basic": "Apoyar a Wcash Wallet",
+    "support": "Email de soporte de {name}",
     "changeservernew-error": "Error al intentar cambiar al Servidor nuevo: ",
     "readingwallet-error": "Error al intentar leer el monedero activo usando el Servidor nuevo:",
     "differentchain-error": "Estás cambiando a un servidor con diferente tipo de cadena, ya no tendrás acceso a este monedero sin tu frase semilla.",
@@ -212,8 +212,8 @@
     "incoming-funds": "Fondos entrantes\n",
     "valuetransfer-confirmed": "Transacción confirmada\n",
     "payment-made": "Pago realizado\n",
-    "email-error-title": "Error del enlace de soporte",
-    "email-error-body": "No se pudo abrir la página de soporte de Wcash Wallet.",
+    "email-error-title": "Error al abrir el cliente de correo electrónico",
+    "email-error-body": "Ingresa a los Ajustes de tu dispositivo y configura una aplicación de correo predeterminada para enviar el reporte.",
     "migration-title": "Migración de la billetera",
     "migration-body": "Estamos migrando tu billetera al nuevo sistema de sincronización. Mantén tu dispositivo conectado a la corriente y al wifi.\n\nTu saldo cambiará a medida que avance la migración. ¡No te preocupes, tus fondos están seguros!"
   },
@@ -246,7 +246,7 @@
     "currencies": [
       {
         "value": "",
-        "text": "No consultar precios de mercado; mostrar solo importes en WEC."
+        "text": "No se consulta ningún precio de ninguna moneda, solo WEC."
       },
       {
         "value": "USD",
@@ -288,11 +288,11 @@
     "donations": [
       {
         "value": true,
-        "text": "Las donaciones de desarrollo no están disponibles en esta compilación."
+        "text": "Envía un Zenny (0.01 WEC) a Wcash Wallet en cada transacción."
       },
       {
         "value": false,
-        "text": "Sin donación de desarrollo."
+        "text": "No pagar para incentivar un sistema más seguro."
       }
     ],
     "privacys": [
@@ -356,19 +356,19 @@
     "blockexplorers": [
       {
         "value": "Zcashexplorer",
-        "text": "No disponible en esta compilación"
+        "text": "ZcashExplorer.App"
       },
       {
         "value": "Cipherscan",
-        "text": "No disponible en esta compilación"
+        "text": "CipherScan.App"
       },
       {
         "value": "Zexplorer",
-        "text": "No disponible en esta compilación"
+        "text": "ZExplorer.App"
       },
       {
         "value": "None",
-        "text": "No disponible en esta compilación"
+        "text": "None"
       }
     ],
     "nochanges": "No se han registrado cambios.",
@@ -401,12 +401,12 @@
     "language-title": "Idioma",
     "islanguage": "Necesitas escoger un Idioma para poder guardar.",
     "sendall-title": "Habilitar el envío de todos los fondos",
-    "donation-title": "Donaciones de desarrollo",
+    "donation-title": "Propina para Wcash Wallet",
     "privacy-title": "High Privacy",
     "mode-title": "Cambiar entre Modo Básico o Avanzado",
     "rescanmenu-title": "Mostrar el botón de reescaneo",
     "recoverywalletinfoondevice-title": "Almacenar la información de recuperación del monedero",
-    "performancelevel-title": "Nivel de rendimiento de sincronización",
+    "performancelevel-title": "Wcash Wallet Performance Level",
     "blockexplorer-title": "Block Explorer",
     "value-currency-": "Sin moneda",
     "value-currency-USD": "US Dólares",
@@ -437,9 +437,9 @@
     "value-performancelevel-High": "High",
     "value-performancelevel-Medium": "Medium",
     "value-performancelevel-Low": "Low",
-    "value-blockexplorer-Zcashexplorer": "No disponible en esta compilación",
-    "value-blockexplorer-Cipherscan": "No disponible en esta compilación",
-    "value-blockexplorer-Zexplorer": "No disponible en esta compilación",
+    "value-blockexplorer-Zcashexplorer": "Zcashexplorer",
+    "value-blockexplorer-Cipherscan": "Cipherscan",
+    "value-blockexplorer-Zexplorer": "Zexplorer",
     "value-blockexplorer-None": "Ninguno",
     "security-title": "Apply Device Security",
     "security-all": "Todo",
@@ -505,10 +505,10 @@
     "zainod": "URL del servidor",
     "network": "Red",
     "serverblock": "Altura de Bloque del Servidor",
-    "zecprice": "Precio de WEC",
+    "zecprice": "Precio del WEC",
     "unknown": "Desconocido",
     "title": "Información del Servidor",
-    "zingolib": "Versión del núcleo de la billetera"
+    "zingolib": "Versión de Wcash Wallet"
   },
   "rescan": {
     "title": "Re-Escanear",
@@ -518,9 +518,7 @@
   },
   "seed": {
     "buttontexts": {
-      "new": [
-        "Ya he guardado \n la semilla"
-      ],
+      "new": ["Ya he guardado \n la semilla"],
       "change": [
         "",
         "Abrir Nuevo",
@@ -533,12 +531,8 @@
         "Realmente quieres \n cambiar el \n servidor activo",
         "Estás seguro/a?"
       ],
-      "view": [
-        "Ya he guardado \n la semilla"
-      ],
-      "restore": [
-        "Restaurar Monedero"
-      ],
+      "view": ["Ya he guardado \n la semilla"],
+      "restore": ["Restaurar Monedero"],
       "backup": [
         "",
         "Restaurar",
@@ -589,8 +583,8 @@
     "title": "Enviar",
     "toaddress": "A la Dirección",
     "invalidaddress": "¡Dirección Incorrecta!",
-    "znsnamenotfound": "La dirección no es válida.",
-    "addressplaceholder": "Dirección Wcash",
+    "znsnamenotfound": "¡Ese nombre .wcash/.wec no existe!",
+    "addressplaceholder": "Dirección o nombre.wcash/.wec",
     "invalidamount": "¡Cantidad Incorrecta!",
     "invalidnumber": "¡Número Incorrecto!",
     "spendable": "Disponible: ",
@@ -610,7 +604,7 @@
     "title-acc": "Pantalla de Enviar",
     "address-acc": "Campo Dirección",
     "scan-acc": "Escanear una Dirección",
-    "zec-acc": "Campo de importe WEC",
+    "zec-acc": "Campo de Cantidad en Wcash",
     "usd-acc": "Campo de Cantidad en Dólares",
     "memo-acc": "Campo del Memo",
     "sendall": "Enviar Todo",
@@ -626,8 +620,8 @@
     "deshielded": "Desblindada",
     "lose-address-title": "SELECCIONAR UNA NUEVA DIRECCIÓN",
     "lose-address-alert": "Ya tienes una dirección válida en el campo de dirección. ¿Desea sustituirla?",
-    "confirm-donation": "Donaciones no disponibles",
-    "donation-minimum-message": "Las donaciones de desarrollo no están disponibles en esta compilación.",
+    "confirm-donation": "Donación",
+    "donation-minimum-message": "La cantidad mínima para donaciones es un Zenny (0,01 WEC), inténtalo de nuevo y gracias.",
     "nym-processing-title": "Procesando vía NYM",
     "nym-enhanced": "NYM Mejorado",
     "nym-warning": "Esta transacción será enrutada a través del mixnet de NYM para mayor privacidad. Puede tardar un poco más que las transacciones estándar."
@@ -796,13 +790,11 @@
   },
   "scanner": {
     "text": "Escanea una Clave de Visualización Totalmente Unificada",
-    "scanaddress": "Escanear una dirección Wcash"
+    "scanaddress": "Escanea una dirección Wcash"
   },
   "ufvk": {
     "buttontexts": {
-      "view": [
-        "Ya he guardado \n la clave de visualización"
-      ],
+      "view": ["Ya he guardado \n la clave de visualización"],
       "change": [
         "",
         "Abrir Nuevo",
@@ -1092,7 +1084,7 @@
   },
   "uris": {
     "baduri": "Error: URI errónea.",
-    "notvalid": "La dirección no es válida.",
+    "notvalid": "No era una dirección válida para wcash",
     "notvalidparameter": "no fue entendido como un parámetro válido",
     "notvalidvalue": "No fue entendido como un valor válido",
     "noindex": "Indice desconocido",
@@ -1105,6 +1097,6 @@
     "memo-too-long": "Memo demasiado largo en parámetro",
     "error-http-not-allowed": "Error: HTTP en texto plano solo está permitido para localhost. Usa HTTPS para servidores remotos."
   },
-  "donation-button": "Donaciones no disponibles",
-  "donation-legend": "Las donaciones de desarrollo están desactivadas."
+  "donation-button": "Donar a Wcash Wallet ",
+  "donation-legend": "Estás donando a Wcash Wallet activamente, Gracias"
 }

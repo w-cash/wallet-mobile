@@ -30,11 +30,18 @@ test('Tests that the Wcash identity is isolated when the native apps build.', ()
   const support = readRepoFile('app/services/sendEmail.ts');
   const cargo = readRepoFile('rust/Cargo.toml');
   const cargoLock = readRepoFile('rust/Cargo.lock');
+  const adapterBuild = readRepoFile('rust/wcash-mobile-adapter/build.rs');
   const adapterSource = readRepoFile('rust/wcash-mobile-adapter/src/lib.rs');
   const ffiCargo = readRepoFile('rust/wcash-mobile-ffi/Cargo.toml');
   const ffiSource = readRepoFile('rust/wcash-mobile-ffi/src/lib.rs');
   const androidBridge = readRepoFile(
     'android/app/src/main/java/org/ZingoLabs/Zingo/RPCModule.kt',
+  );
+  const androidDurableSave = readRepoFile(
+    'android/app/src/main/java/org/ZingoLabs/Zingo/DurableWalletSave.kt',
+  );
+  const androidMixnetBridge = readRepoFile(
+    'android/app/src/main/java/org/ZingoLabs/Zingo/NymTransportModule.kt',
   );
   const androidBuild = readRepoFile('rust/android/docker/Dockerfile');
   const androidLocalBuild = readRepoFile(
@@ -44,17 +51,31 @@ test('Tests that the Wcash identity is isolated when the native apps build.', ()
     'scripts/generate_kotlin_bindings.mjs',
   );
   const iosBridge = readRepoFile('ios/RPCModule.swift');
+  const iosMixnetBridge = readRepoFile('ios/NymTransportModule.swift');
   const iosBuild = readRepoFile('rust/ios/build_ios.mjs');
   const wcashUdl = readRepoFile('rust/wcash-mobile-ffi/src/zingo.udl');
   const servers = readRepoFile('app/uris/serverUris.ts');
   const dataService = readRepoFile('app/walletBackend/modules/DataService.ts');
   const loadedApp = readRepoFile('app/LoadedApp/LoadedApp.tsx');
+  const utils = readRepoFile('app/utils/Utils.ts');
   const wcashQa = readRepoFile('.github/workflows/wcash-pr-qa.yaml');
   const androidRelease = readRepoFile('.github/workflows/android-release.yaml');
   const androidReusableBuild = readRepoFile(
     '.github/workflows/android-build.yaml',
   );
+  const androidApkWorkflow = readRepoFile(
+    '.github/workflows/android-apk-build.yaml',
+  );
+  const androidIntegrationWorkflow = readRepoFile(
+    '.github/workflows/android-ubuntu-integration-test-ci.yaml',
+  );
   const iosWorkflow = readRepoFile('.github/workflows/ios-build.yaml');
+  const iosIntegrationWorkflow = readRepoFile(
+    '.github/workflows/ios-integration-test.yaml',
+  );
+  const mixnetWorkflow = readRepoFile(
+    '.github/workflows/nym-proxy-ffi-check.yaml',
+  );
   const upstreamCi = readRepoFile('.github/workflows/ci.yaml');
   const upstreamNightly = readRepoFile('.github/workflows/ci-nightly.yaml');
   const upstreamMaestro = readRepoFile(
@@ -63,9 +84,7 @@ test('Tests that the Wcash identity is isolated when the native apps build.', ()
   const storybookWorkflow = readRepoFile(
     '.github/workflows/deploy-storybook.yaml',
   );
-  const visualWorkflow = readRepoFile(
-    '.github/workflows/visual-review.yaml',
-  );
+  const visualWorkflow = readRepoFile('.github/workflows/visual-review.yaml');
   const translationDocuments = ['en', 'es', 'pt', 'ru', 'tr'].map(locale =>
     JSON.parse(readRepoFile(`app/translations/${locale}.json`)),
   );
@@ -86,6 +105,13 @@ test('Tests that the Wcash identity is isolated when the native apps build.', ()
   expect(
     android.match(/resValue\("string", "app_name", "Wcash Wallet"\)/g),
   ).toHaveLength(2);
+  expect(android).toContain('rejectLegacyNymInputs');
+  expect(android).toContain('verifyNoLegacyNymPackageOutputs');
+  expect(android).toContain('zingo_nym_proxy_ffi');
+  expect(android).toContain('wcashRegtestQaArm64Only');
+  expect(android).toContain('isEnable = splitApk || wcashRegtestQaArm64Only');
+  expect(android).toContain('include("arm64-v8a")');
+  expect(android).toContain('verifyWcashRegtestQaArm64Package');
   expect(android).not.toContain('Wcash Wallet Beta');
   expect(
     iosProject.match(/PRODUCT_BUNDLE_IDENTIFIER = com\.wcashwallet\.wallet;/g),
@@ -114,15 +140,34 @@ test('Tests that the Wcash identity is isolated when the native apps build.', ()
     productTranslations.filter(value => /zingo\s*labs?|zingo/i.test(value)),
   ).toEqual([]);
   for (const document of translationDocuments) {
-    expect(document.about.copyright[0]).toMatch(/ZingoLabs/);
-    expect(document.about.copyright[2]).toMatch(/Copyright \(c\) 2026 Zingo/);
+    expect(document.about.copyright[0]).toMatch(/Wcash Wallet/);
+    expect(document.about.copyright[2]).toMatch(
+      /Copyright \(c\) 2026 Wcash Wallet/,
+    );
   }
+  expect(constants).toContain("zingolib: 'Wcash Wallet'");
   expect(support).toContain('https://github.com/w-cash/wallet-mobile/issues');
   expect(support).not.toContain('mailto:');
   expect(cargo).toContain('https://github.com/w-cash/wallet-core.git');
   expect(cargo).not.toContain('https://github.com/zingolabs/zingolib.git');
+  expect(cargo).toContain('exclude = ["lib", "nym-proxy-ffi"]');
+  expect(cargo).not.toMatch(/features = \[[^\]]*"nym"/s);
   expect(cargoLock.match(/^name = "wcash-wallet"$/gm)).toHaveLength(1);
   expect(cargoLock).not.toContain('5b4e29980eb45e84ddab9024f530c923986d7e1e');
+  const walletCoreRevision = cargo.match(
+    /wallet-core\.git", rev = "([0-9a-f]{40})"/,
+  )?.[1];
+  expect(walletCoreRevision).toHaveLength(40);
+  expect(cargoLock).toContain(
+    `wallet-core.git?rev=${walletCoreRevision}#${walletCoreRevision}`,
+  );
+  expect(adapterBuild).toContain('WCASH_WALLET_CORE_REV');
+  expect(adapterBuild).toContain('name = \\"zingolib\\"');
+  expect(adapterSource).toContain(
+    'pub const WCASH_WALLET_CORE_REV: &str = env!("WCASH_WALLET_CORE_REV")',
+  );
+  expect(adapterSource).toContain('"git_commit": WCASH_WALLET_CORE_REV');
+  expect(ffiSource).toContain('wcash_mobile_adapter::WCASH_WALLET_CORE_REV');
   expect(adapterSource).toContain('WcashTestnetRuntime');
   expect(adapterSource).toContain('WcashRegtestRuntime');
   expect(adapterSource).not.toContain('zingolib::lightclient::LightClient');
@@ -138,6 +183,18 @@ test('Tests that the Wcash identity is isolated when the native apps build.', ()
   expect(androidBridge).toContain(
     'Os.chmod(directory.absolutePath, OsConstants.S_IRWXU)',
   );
+  expect(
+    androidBridge.match(
+      /requireDurableInitialWalletSave\(saveWalletFile\(\)\)/g,
+    ),
+  ).toHaveLength(3);
+  expect(androidDurableSave).toContain(
+    'Wcash Wallet initialization could not be saved durably.',
+  );
+  expect(androidMixnetBridge).toContain(
+    'unsupported by the reviewed Wcash backend',
+  );
+  expect(androidMixnetBridge).not.toContain('uniffi.zingo_nym_proxy_ffi');
   expect(iosBridge).toContain('setWalletDirectory(directory:');
   expect(iosBridge).toContain('.applicationSupportDirectory');
   expect(iosBridge).toContain('"wcash-wallet.sqlite-wal"');
@@ -156,22 +213,44 @@ test('Tests that the Wcash identity is isolated when the native apps build.', ()
   expect(iosBridge).toContain('try protectWalletFile(at: temporary)');
   expect(iosBridge).toContain('replaceItemAt(');
   expect(iosBridge).toContain('options: [.usingNewMetadataOnly]');
-  expect(iosBridge).toContain('try verifyWalletFileProtection(at: destination)');
-  expect(iosBridge).toContain('#if !targetEnvironment(simulator)');
-  expect(iosBridge).toContain('try? fm.moveItem(at: rollback, to: destination)');
-  expect(iosBridge).toContain('try? fm.removeItem(at: temporary)');
-  expect(androidBuild.match(/--package wcash-mobile-ffi/g)).toHaveLength(4);
-  expect(androidLocalBuild).toContain("'--package', 'wcash-mobile-ffi'");
-  expect(kotlinBindingBuild).toContain(
-    "'wcash-mobile-ffi', 'src', 'zingo.udl'",
+  expect(iosBridge).toContain(
+    'try verifyWalletFileProtection(at: destination)',
   );
-  expect(iosBuild).toContain("'--package', 'wcash-mobile-ffi'");
+  expect(iosBridge).toContain('#if !targetEnvironment(simulator)');
+  expect(iosBridge).toContain(
+    'try? fm.moveItem(at: rollback, to: destination)',
+  );
+  expect(iosBridge).toContain('try? fm.removeItem(at: temporary)');
+  expect(iosMixnetBridge).toContain(
+    'unsupported by the reviewed Wcash backend',
+  );
+  expect(iosMixnetBridge).not.toContain('MixnetProxyHandle');
+  expect(iosProject).not.toContain('ZingoNymProxyFFI.xcframework');
+  expect(iosProject).not.toContain('zingo_nym_proxy_ffi.swift');
+  expect(androidBuild.match(/--package wcash-mobile-ffi/g)).toHaveLength(4);
+  expect(androidBuild).not.toContain('nym-proxy-ffi');
+  expect(androidLocalBuild).toMatch(
+    /['"]--package['"]\s*,\s*['"]wcash-mobile-ffi['"]/,
+  );
+  expect(androidLocalBuild).not.toContain('nym-proxy-ffi');
+  expect(androidLocalBuild).toContain("'libzingo_nym_proxy_ffi.so'");
+  expect(androidLocalBuild).toContain("'--regtest-qa-apk'");
+  expect(androidLocalBuild).toContain("'-PwcashRegtestQaArm64Only=true'");
+  expect(kotlinBindingBuild).toContain("'wcash-mobile-ffi'");
+  expect(kotlinBindingBuild).toContain("'zingo.udl'");
+  expect(kotlinBindingBuild).not.toContain('nym-proxy-ffi');
+  expect(kotlinBindingBuild).toContain("'zingo_nym_proxy_ffi'");
+  expect(iosBuild).toMatch(/['"]--package['"]\s*,\s*['"]wcash-mobile-ffi['"]/);
+  expect(iosBuild).not.toContain('nym-proxy-ffi');
   expect(dataService).toContain(
     'unsupported Wcash feature: memo message history',
   );
   expect(loadedApp).toContain(
-    'SettingsFileImpl.writeSettings(SettingsNameEnum.donation, false)',
+    'SettingsFileImpl.writeSettings(SettingsNameEnum.donation, value)',
   );
+  expect(loadedApp).toContain('zenniesAddress &&');
+  expect(utils).toContain('static async getDonationAddress');
+  expect(utils).toContain("return '';");
   expect(servers).toContain("uri: 'http://127.0.0.1:48234'");
   expect(servers).toContain('chainName: ChainNameEnum.regtestChainName');
   expect(servers).not.toContain('zec.rocks');
@@ -190,18 +269,25 @@ test('Tests that the Wcash identity is isolated when the native apps build.', ()
   expect(androidRelease).toContain('aarch64-linux-android');
   expect(androidRelease).toContain('aarch64-apple-ios-sim');
   expect(androidRelease).toContain('setWalletDirectory');
+  expect(androidRelease).toContain('uniffi_zingo_fn_func_set_wallet_directory');
+  expect(androidRelease).toContain("! grep -Eiq 'nym|mixnet'");
   expect(androidRelease).toContain('actions/upload-artifact');
-  expect(androidRelease).not.toMatch(/gradlew|signing|nym|publish|pages deploy/i);
-  expect(androidReusableBuild).toContain('--package wcash-mobile-ffi');
-  expect(androidReusableBuild).not.toContain('working-directory: ./rust/lib');
-  expect(androidReusableBuild).not.toContain(
-    'repository: ${{ env.REPO-OWNER }}/zingo-mobile',
-  );
-  expect(iosWorkflow).toContain('runs-on: macos-15');
-  expect(iosWorkflow).not.toContain('zingolabs/zingo-mobile');
-  expect(iosWorkflow).not.toContain('working-directory: ./rust/lib');
-  expect(iosWorkflow).toContain('Verify cached Wcash-only boundary');
-  expect(iosWorkflow).toContain('path[[:space:]]*=[[:space:]]*"/');
+  expect(androidRelease).not.toMatch(/gradlew|signing|publish|pages deploy/i);
+  for (const disabledWorkflow of [
+    androidReusableBuild,
+    androidApkWorkflow,
+    androidIntegrationWorkflow,
+    iosWorkflow,
+    iosIntegrationWorkflow,
+    mixnetWorkflow,
+  ]) {
+    expect(disabledWorkflow).toContain('workflow_call:');
+    expect(disabledWorkflow).toContain('contents: read');
+    expect(disabledWorkflow).toContain('exit 1');
+    expect(disabledWorkflow).not.toMatch(
+      /upload-artifact|gradlew|build_ios|nym-proxy-ffi|working-directory: \.\/rust\/lib/,
+    );
+  }
   expect(upstreamCi).not.toContain('  pull_request:');
   expect(upstreamCi).toContain('contents: read');
   expect(upstreamCi).toContain('exit 1');
@@ -220,8 +306,6 @@ test('Tests that the Wcash identity is isolated when the native apps build.', ()
     existsSync(`${process.cwd()}/.github/workflows/visual-accept.yaml`),
   ).toBe(false);
   expect(
-    existsSync(
-      `${process.cwd()}/.github/workflows/visual-review-cleanup.yaml`,
-    ),
+    existsSync(`${process.cwd()}/.github/workflows/visual-review-cleanup.yaml`),
   ).toBe(false);
 });

@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import java.util.zip.ZipFile
 
 plugins {
     id("com.android.application")
@@ -89,6 +90,8 @@ val jscFlavor = "io.github.react-native-community:jsc-android:2026004.+"
  */
 val splitApk = (project.findProperty("splitApk") as? String)?.toBoolean() ?: false
 val includeUniversalApk = (project.findProperty("includeUniversalApk") as? String)?.toBoolean() ?: false
+val wcashRegtestQaArm64Only =
+    (project.findProperty("wcashRegtestQaArm64Only") as? String)?.toBoolean() ?: false
 
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("local.zingo.jks.properties")
@@ -171,10 +174,14 @@ android {
 
     splits {
         abi {
-            isEnable = splitApk
+            isEnable = splitApk || wcashRegtestQaArm64Only
             reset()
-            include("armeabi-v7a", "x86", "arm64-v8a", "x86_64")
-            isUniversalApk = includeUniversalApk
+            if (wcashRegtestQaArm64Only) {
+                include("arm64-v8a")
+            } else {
+                include("armeabi-v7a", "x86", "arm64-v8a", "x86_64")
+            }
+            isUniversalApk = includeUniversalApk && !wcashRegtestQaArm64Only
         }
     }
 
@@ -244,25 +251,7 @@ android {
         fatal += "NewApi"
     }
 
-    sourceSets {
-        getByName("test") {
-            // The nym proxy shim's Kotlin wire-contract test, read from the
-            // crate itself. No copy lives under src/test.
-            java.srcDir("../../rust/nym-proxy-ffi/contract-tests/kotlin")
-        }
-    }
-
     testOptions {
-        unitTests.all {
-            // The golden wire-contract pins for GoldenWireContractTest, read
-            // from the crate itself.
-            it.systemProperty(
-                "zingo.golden.dir",
-                layout.projectDirectory
-                    .dir("../../rust/nym-proxy-ffi/test-data/golden")
-                    .asFile.absolutePath
-            )
-        }
         managedDevices {
             val pixel2api29 = localDevices.create("pixel2api29_x86") {
                 device = "Pixel 2"
@@ -327,6 +316,88 @@ androidComponents {
         }
     }
 }
+
+val rejectLegacyNymInputs = tasks.register("rejectLegacyNymInputs") {
+    doLast {
+        val roots = listOf(
+            file("src/main/jniLibs"),
+            layout.buildDirectory.dir("generated/source/uniffi").get().asFile,
+        )
+        val forbidden = roots
+            .filter { it.exists() }
+            .flatMap { root ->
+                root.walkTopDown()
+                    .filter { it.isFile && it.name.contains("zingo_nym_proxy_ffi") }
+                    .toList()
+            }
+        check(forbidden.isEmpty()) {
+            "Wcash builds reject legacy Nym inputs: ${forbidden.joinToString()}"
+        }
+    }
+}
+
+val verifyNoLegacyNymPackageOutputs = tasks.register("verifyNoLegacyNymPackageOutputs") {
+    doLast {
+        val archives = fileTree(layout.buildDirectory.dir("outputs")) {
+            include("**/*.apk", "**/*.aab")
+        }.files
+        val forbidden = mutableListOf<String>()
+        for (archive in archives) {
+            ZipFile(archive).use { zip ->
+                val entries = zip.entries()
+                while (entries.hasMoreElements()) {
+                    val name = entries.nextElement().name
+                    if (name.contains("zingo_nym_proxy_ffi")) {
+                        forbidden += "${archive.name}:$name"
+                    }
+                }
+            }
+        }
+        check(forbidden.isEmpty()) {
+            "Wcash packages reject legacy Nym artifacts: ${forbidden.joinToString()}"
+        }
+    }
+}
+
+val verifyWcashRegtestQaArm64Package = tasks.register("verifyWcashRegtestQaArm64Package") {
+    onlyIf { wcashRegtestQaArm64Only }
+    doLast {
+        val archives = fileTree(layout.buildDirectory.dir("outputs/apk/prod/debug")) {
+            include("**/*.apk")
+        }.files
+        check(archives.isNotEmpty()) {
+            "Wcash ARM64 Local Regtest QA build produced no APK"
+        }
+        check(archives.size == 1 && archives.single().name.contains("arm64-v8a")) {
+            "Wcash Local Regtest QA build must produce one ARM64 split and no universal APK: ${archives.map { it.name }}"
+        }
+        for (archive in archives) {
+            ZipFile(archive).use { zip ->
+                val nativeEntries = zip.entries().asSequence()
+                    .map { it.name }
+                    .filter { it.startsWith("lib/") && it.endsWith(".so") }
+                    .toList()
+                val packagedAbis = nativeEntries
+                    .map { it.split('/')[1] }
+                    .toSet()
+                check(packagedAbis == setOf("arm64-v8a")) {
+                    "Wcash Local Regtest QA APK must be ARM64-only; found $packagedAbis in ${archive.name}"
+                }
+                check(nativeEntries.count { it == "lib/arm64-v8a/libuniffi_zingo.so" } == 1) {
+                    "Wcash ARM64 Local Regtest QA APK must contain exactly one libuniffi_zingo.so"
+                }
+            }
+        }
+    }
+}
+
+tasks.matching { it.name.startsWith("pre") && it.name.endsWith("Build") }
+    .configureEach { dependsOn(rejectLegacyNymInputs) }
+tasks.matching { it.name.startsWith("assemble") || it.name.startsWith("bundle") }
+    .configureEach {
+        finalizedBy(verifyNoLegacyNymPackageOutputs)
+        finalizedBy(verifyWcashRegtestQaArm64Package)
+    }
 
 // change this to build.sh script
 androidComponents {

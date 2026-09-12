@@ -29,11 +29,11 @@
   "save": "Salvar",
   "copy": "Cópia de",
   "confirm": "Confirmar",
-  "support": "Abrir suporte",
+  "support": "Enviar E-mail",
   "view-error": "Ver/Relatar Erro",
   "menudrawer-acc": "Abrir Menu Lateral",
-  "donation": "As doações de desenvolvimento não estão disponíveis nesta compilação do Wcash Wallet.",
-  "zenny-tips-ab": "Doações de desenvolvimento",
+  "donation": "Doação para o Wcash Wallet!\nObrigado por apoiar o Wcash Wallet!",
+  "zenny-tips-ab": "Zenny Gorjetas",
   "restarting": "Error ao conectar ao servidor, o aplicativo será reiniciado em alguns segundos.",
   "change-privacy": "Nova política de privacidade: ",
   "email": "https://github.com/w-cash/wallet-mobile/issues",
@@ -155,8 +155,8 @@
     "alert-newwallet-body": "Você pode confirmar que deseja realmente criar uma nova carteira e perder o acesso à carteira atual.",
     "serverfirsttry": "Ocorreu um erro ao tentar conectar-se ao servidor acima, atualmente verificando os servidores na lista.",
     "serversecondtry": "Não parece haver nenhum problema com o servidor. Algo mais está acontecendo.",
-    "alert-donation-title": "DOAÇÕES INDISPONÍVEIS",
-    "alert-donation-body": "As doações de desenvolvimento não estão disponíveis nesta compilação do Wcash Wallet.",
+    "alert-donation-title": "APOIAR A WCASH WALLET",
+    "alert-donation-body": "Você quer ajudar o Wcash Wallet a tornar o Wcash mais útil? Opte por dar uma gorjeta de um Zenny (0.01 WEC) para Wcash Wallet em cada transação! Se sim, pressione confirmar, caso contrário, pressione Cancelar.",
     "recoverkeys": "Recuperar a última Clave de Recuperação usada",
     "recoverkeysinstall": "Recuperou a última Clave de Recuperação usada neste dispositivo:",
     "customserver-unreachable": "Seu servidor personalizado não respondeu e a carteira retornou um erro. Abra Ajustes para escolher outro ou tente novamente mais tarde.",
@@ -179,8 +179,8 @@
     "insight": "Visão Financeira",
     "loadwalletfromseed-basic": "Restaurar outra Carteira",
     "addressbook": "Agenda de Endereços",
-    "tipzingolabs-basic": "Doações de desenvolvimento",
-    "support": "Wcash Wallet support",
+    "tipzingolabs-basic": "Apoiar a Wcash Wallet",
+    "support": "E-mail de suporte do {name}",
     "changeservernew-error": "Error ao tentar alterar para um novo servidor: ",
     "readingwallet-error": "Error ao tentar ler a carteira com o novo servidor:",
     "differentchain-error": "Você está mudando para um servidor com uma rede diferente, você não terá mais acesso a essa carteira sem suas frases de recuperação.",
@@ -212,8 +212,8 @@
     "incoming-funds": "Fundos recebidos\n",
     "valuetransfer-confirmed": "Transação confirmada\n",
     "payment-made": "Pagamento efetuado\n",
-    "email-error-title": "Erro no link de suporte",
-    "email-error-body": "Não foi possível abrir a página de suporte do Wcash Wallet.",
+    "email-error-title": "Error ao abrir o cliente de e-mail",
+    "email-error-body": "Acesse as configurações do seu dispositivo e defina um aplicativo de e-mail padrão para enviar o relatório.",
     "migration-title": "Migração de carteira",
     "migration-body": "Estamos migrando sua carteira para o novo sistema de sincronização. Mantenha seu dispositivo conectado à energia e ao Wi-Fi.\n\nSeu saldo mudará conforme a migração avança. Não se preocupe, seus fundos estão seguros!"
   },
@@ -246,7 +246,7 @@
     "currencies": [
       {
         "value": "",
-        "text": "Não buscar preço de mercado; mostrar apenas valores em WEC."
+        "text": "Não é possível buscar nenhum preço para outras moedas, apenas WEC."
       },
       {
         "value": "USD",
@@ -288,11 +288,11 @@
     "donations": [
       {
         "value": true,
-        "text": "As doações de desenvolvimento não estão disponíveis nesta compilação."
+        "text": "Dê gorjeta ao Wcash Wallet a Zenny (0.01 WEC) em cada transação."
       },
       {
         "value": false,
-        "text": "Sem doação de desenvolvimento."
+        "text": "Não pague para incentivar um sistema mais seguro."
       }
     ],
     "privacys": [
@@ -356,19 +356,19 @@
     "blockexplorers": [
       {
         "value": "Zcashexplorer",
-        "text": "Indisponível nesta compilação"
+        "text": "ZcashExplorer.App"
       },
       {
         "value": "Cipherscan",
-        "text": "Indisponível nesta compilação"
+        "text": "CipherScan.App"
       },
       {
         "value": "Zexplorer",
-        "text": "Indisponível nesta compilação"
+        "text": "ZExplorer.App"
       },
       {
         "value": "None",
-        "text": "Indisponível nesta compilação"
+        "text": "None"
       }
     ],
     "nochanges": "Nenhuma alteração registrada.",
@@ -401,12 +401,12 @@
     "language-title": "Linguagem",
     "islanguage": "Você precisa escolher um idioma para salvar.",
     "sendall-title": "Ativar o envio de todos os fundos",
-    "donation-title": "Doações de desenvolvimento",
+    "donation-title": "Dica Wcash Wallet",
     "privacy-title": "High Privacy",
     "mode-title": "Alterar entre o modo Básico ou Avançado",
     "rescanmenu-title": "Mostrar o botão de reescaneamento",
     "recoverywalletinfoondevice-title": "Armazene informações de recuperação da carteira",
-    "performancelevel-title": "Nível de desempenho da sincronização",
+    "performancelevel-title": "Wcash Wallet Performance Level",
     "blockexplorer-title": "Block Explorer",
     "value-currency-": "Sem Saldo",
     "value-currency-USD": "US Dólares",
@@ -437,9 +437,9 @@
     "value-performancelevel-High": "High",
     "value-performancelevel-Medium": "Medium",
     "value-performancelevel-Low": "Low",
-    "value-blockexplorer-Zcashexplorer": "Indisponível nesta compilação",
-    "value-blockexplorer-Cipherscan": "Indisponível nesta compilação",
-    "value-blockexplorer-Zexplorer": "Indisponível nesta compilação",
+    "value-blockexplorer-Zcashexplorer": "Zcashexplorer",
+    "value-blockexplorer-Cipherscan": "Cipherscan",
+    "value-blockexplorer-Zexplorer": "Zexplorer",
     "value-blockexplorer-None": "Nenhum",
     "security-title": "Apply Device Security",
     "security-all": "Todos",
@@ -508,7 +508,7 @@
     "zecprice": "Preço do WEC",
     "unknown": "Desconhecido",
     "title": "Informações do Servidor",
-    "zingolib": "Versão do núcleo da carteira"
+    "zingolib": "Versão Wcash Wallet"
   },
   "rescan": {
     "title": "Rescan",
@@ -518,9 +518,7 @@
   },
   "seed": {
     "buttontexts": {
-      "new": [
-        "Eu salvei \n as Frases de Recuperação"
-      ],
+      "new": ["Eu salvei \n as Frases de Recuperação"],
       "change": [
         "",
         "Abrir Nova Carteira",
@@ -533,12 +531,8 @@
         "Você realmente quer \n alterar para o seu \n servidor atual",
         "Tem certeza?"
       ],
-      "view": [
-        "Eu salvei as \n Frases de Recuperação"
-      ],
-      "restore": [
-        "Restaurar Carteira"
-      ],
+      "view": ["Eu salvei as \n Frases de Recuperação"],
+      "restore": ["Restaurar Carteira"],
       "backup": [
         "",
         "Restaurar",
@@ -589,8 +583,8 @@
     "title": "Enviar",
     "toaddress": "Endereço",
     "invalidaddress": "Endereço Inválido!",
-    "znsnamenotfound": "O endereço não é válido.",
-    "addressplaceholder": "Endereço Wcash",
+    "znsnamenotfound": "Esse nome .wcash/.wec não existe!",
+    "addressplaceholder": "Endereço ou nome.wcash/.wec",
     "invalidamount": "Quantia Invalida!",
     "invalidnumber": "Número Inválido!",
     "spendable": "Disponível: ",
@@ -610,7 +604,7 @@
     "title-acc": "Enviar Screen",
     "address-acc": "Campo de Endereço",
     "scan-acc": "Escaneie um Endereço",
-    "zec-acc": "Campo de valor WEC",
+    "zec-acc": "Campo de Valor WEC",
     "usd-acc": "Campo de Valor USD",
     "memo-acc": "Campo de MEMO",
     "sendall": "Enviar Tudo",
@@ -626,8 +620,8 @@
     "deshielded": "Desblindada",
     "lose-address-title": "SELECIONE UM NOVO ENDEREÇO",
     "lose-address-alert": "Você já possui um endereço válido no campo de endereço. Deseja substituí-lo?",
-    "confirm-donation": "Doações indisponíveis",
-    "donation-minimum-message": "As doações de desenvolvimento não estão disponíveis nesta compilação.",
+    "confirm-donation": "Doação",
+    "donation-minimum-message": "O valor mínimo para doações é um Zenny (0,01 WEC), tente novamente e obrigado.",
     "nym-processing-title": "Processando via NYM",
     "nym-enhanced": "NYM Aprimorado",
     "nym-warning": "Esta transação será roteada através do mixnet NYM para maior privacidade. Pode levar um pouco mais de tempo do que as transações padrão."
@@ -796,13 +790,11 @@
   },
   "scanner": {
     "text": "Faça o Scan de uma Chave de Visualização Unificada completa",
-    "scanaddress": "Escanear um endereço Wcash"
+    "scanaddress": "Escaneie um Endereço Wcash"
   },
   "ufvk": {
     "buttontexts": {
-      "view": [
-        "Eu salvei a \n chave de visualização"
-      ],
+      "view": ["Eu salvei a \n chave de visualização"],
       "change": [
         "",
         "Abrir Nova Carteira",
@@ -1092,7 +1084,7 @@
   },
   "uris": {
     "baduri": "Error: Erro na URI .",
-    "notvalid": "O endereço não é válido.",
+    "notvalid": "não era um endereço wcash válido",
     "notvalidparameter": "não foi entendido como um parâmetro válido",
     "notvalidvalue": "Não entendi o valor do parâmetro",
     "noindex": "Index desconhecido",
@@ -1105,6 +1097,6 @@
     "memo-too-long": "Memo muito longo no parâmetro",
     "error-http-not-allowed": "Error: HTTP em texto plano só é permitido para localhost. Use HTTPS para servidores remotos."
   },
-  "donation-button": "Doações indisponíveis",
-  "donation-legend": "As doações de desenvolvimento estão desativadas."
+  "donation-button": "Doar para Wcash Wallet ",
+  "donation-legend": "Você está doando para Wcash Wallet ativamente, Obrigado"
 }

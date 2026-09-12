@@ -19,9 +19,9 @@ const boundaryTranslate = (key: string): TranslateType => {
     case 'email':
       return 'https://github.com/w-cash/wallet-mobile/issues';
     case 'loadedapp.email-error-title':
-      return 'Support link error';
+      return 'Email error';
     case 'loadedapp.email-error-body':
-      return 'Could not open the Wcash Wallet support page.';
+      return 'Could not open the email client.';
     case 'close':
       return 'Close';
     default:
@@ -93,7 +93,7 @@ class AppErrorBoundary extends Component<React.PropsWithChildren, State> {
           {zingolibVersion ? (
             <Text
               style={styles.versionLine}
-            >{`Wallet core: ${zingolibVersion}`}</Text>
+            >{`Wcash Wallet: ${zingolibVersion}`}</Text>
           ) : null}
         </View>
         <ScrollView

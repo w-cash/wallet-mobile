@@ -29,11 +29,11 @@
   "save": "Save",
   "copy": "Copy",
   "confirm": "Confirm",
-  "support": "Open Support",
+  "support": "Send Email",
   "view-error": "View/Report Error",
   "menudrawer-acc": "Open Menu Drawer",
-  "donation": "Developer donations are unavailable in this Wcash Wallet build.",
-  "zenny-tips-ab": "Developer donations",
+  "donation": "Donation to Wcash Wallet!\nThanks for supporting Wcash Wallet!",
+  "zenny-tips-ab": "Zenny Tips",
   "restarting": "Error connecting to the Server, the App will restart in a few seconds.",
   "change-privacy": "New privacy policy: ",
   "email": "https://github.com/w-cash/wallet-mobile/issues",
@@ -155,8 +155,8 @@
     "alert-newwallet-body": "Can you confirm that you really want to create a new wallet and lose access to the current wallet.",
     "serverfirsttry": "An error occurred while trying to connect to the above server, currently checking the servers on the list.",
     "serversecondtry": "It doesn't seem to be a problem with the server. Someting else is happening.",
-    "alert-donation-title": "DONATIONS UNAVAILABLE",
-    "alert-donation-body": "Developer donations are unavailable in this Wcash Wallet build.",
+    "alert-donation-title": "TIP WCASH WALLET",
+    "alert-donation-body": "Do you want to help Wcash Wallet make Wcash more useful? Opt in to tip one Zenny (0.01 WEC) to Wcash Wallet with each transaction! If so, press confirm, otherwise press Cancel.",
     "recoverkeys": "Recover last Keys used",
     "recoverkeysinstall": "Recovered the last Keys used in this device:",
     "customserver-unreachable": "Your custom server didn't respond and the wallet returned an error. Open Settings to choose a different one or retry later.",
@@ -179,8 +179,8 @@
     "insight": "Financial Insight",
     "loadwalletfromseed-basic": "Restore another wallet",
     "addressbook": "Address Book",
-    "tipzingolabs-basic": "Developer donations",
-    "support": "Wcash Wallet support",
+    "tipzingolabs-basic": "Tip Wcash Wallet",
+    "support": "{name} support email",
     "changeservernew-error": "Error trying to change the server to the new one: ",
     "readingwallet-error": "Error trying to read the wallet with the new server:",
     "differentchain-error": "You are changing to a server with a different chain, you will no longer have access to this wallet without the seed phrase.",
@@ -212,8 +212,8 @@
     "incoming-funds": "Incoming funds\n",
     "valuetransfer-confirmed": "Transaction confirmed\n",
     "payment-made": "Payment made\n",
-    "email-error-title": "Support link error",
-    "email-error-body": "Could not open the Wcash Wallet support page.",
+    "email-error-title": "Error opening email client",
+    "email-error-body": "Go to your device's Settings and set a default email application to send the report.",
     "migration-title": "Wallet migration",
     "migration-body": "We are migrating your wallet to the new synchronization system. Keep your device connected to power and WiFi.\n\nYour balance will change as the migration progresses. Don't worry, your funds are safe!"
   },
@@ -246,7 +246,7 @@
     "currencies": [
       {
         "value": "",
-        "text": "Do not fetch a market price; show WEC amounts only."
+        "text": "No fetching any price for any currency, only WEC."
       },
       {
         "value": "USD",
@@ -288,11 +288,11 @@
     "donations": [
       {
         "value": true,
-        "text": "Developer donations are unavailable in this build."
+        "text": "Tip Wcash Wallet a Zenny (0.01 WEC) in every transaction."
       },
       {
         "value": false,
-        "text": "No developer donation."
+        "text": "Don't pay to incentivize a more secure system."
       }
     ],
     "privacys": [
@@ -356,19 +356,19 @@
     "blockexplorers": [
       {
         "value": "Zcashexplorer",
-        "text": "Unavailable in this build"
+        "text": "ZcashExplorer.App"
       },
       {
         "value": "Cipherscan",
-        "text": "Unavailable in this build"
+        "text": "CipherScan.App"
       },
       {
         "value": "Zexplorer",
-        "text": "Unavailable in this build"
+        "text": "ZExplorer.App"
       },
       {
         "value": "None",
-        "text": "Unavailable in this build"
+        "text": "None"
       }
     ],
     "nochanges": "No changes registered.",
@@ -401,12 +401,12 @@
     "language-title": "Language",
     "islanguage": "You need to choose a language to save.",
     "sendall-title": "Enable sending all funds",
-    "donation-title": "Developer donations",
+    "donation-title": "Tip Wcash Wallet",
     "privacy-title": "High Privacy",
     "mode-title": "Switch between Basic or Advanced Mode",
     "rescanmenu-title": "Show Rescan Button",
     "recoverywalletinfoondevice-title": "Store Wallet Recovery Info",
-    "performancelevel-title": "Sync Performance Level",
+    "performancelevel-title": "Wcash Wallet Performance Level",
     "blockexplorer-title": "Block Explorer",
     "value-currency-": "No currency",
     "value-currency-USD": "US Dollar",
@@ -437,9 +437,9 @@
     "value-performancelevel-High": "High",
     "value-performancelevel-Medium": "Medium",
     "value-performancelevel-Low": "Low",
-    "value-blockexplorer-Zcashexplorer": "Unavailable in this build",
-    "value-blockexplorer-Cipherscan": "Unavailable in this build",
-    "value-blockexplorer-Zexplorer": "Unavailable in this build",
+    "value-blockexplorer-Zcashexplorer": "Zcashexplorer",
+    "value-blockexplorer-Cipherscan": "Cipherscan",
+    "value-blockexplorer-Zexplorer": "Zexplorer",
     "value-blockexplorer-None": "None",
     "security-title": "Apply Device Security",
     "security-all": "All",
@@ -508,7 +508,7 @@
     "zecprice": "WEC Price",
     "unknown": "Unknown",
     "title": "Server Info",
-    "zingolib": "Wallet Core Version"
+    "zingolib": "Wcash Wallet Version"
   },
   "rescan": {
     "title": "Rescan",
@@ -518,9 +518,7 @@
   },
   "seed": {
     "buttontexts": {
-      "new": [
-        "I have saved \n the seed"
-      ],
+      "new": ["I have saved \n the seed"],
       "change": [
         "",
         "Open New",
@@ -533,12 +531,8 @@
         "You really want \n to change your \n actual server",
         "Are you certain?"
       ],
-      "view": [
-        "I have saved \n the seed"
-      ],
-      "restore": [
-        "Restore Wallet"
-      ],
+      "view": ["I have saved \n the seed"],
+      "restore": ["Restore Wallet"],
       "backup": [
         "",
         "Restore",
@@ -589,8 +583,8 @@
     "title": "Send",
     "toaddress": "To Address",
     "invalidaddress": "Invalid Address!",
-    "znsnamenotfound": "That address is not valid.",
-    "addressplaceholder": "Wcash address",
+    "znsnamenotfound": "That .wcash/.wec name does not exist!",
+    "addressplaceholder": "Address or name.wcash/.wec",
     "invalidamount": "Invalid Amount!",
     "invalidnumber": "Invalid Number!",
     "spendable": "Spendable: ",
@@ -626,8 +620,8 @@
     "deshielded": "Deshielded",
     "lose-address-title": "SELECT A NEW ADDRESS",
     "lose-address-alert": "You already have a valid address in the address field. Do you want to replace it?",
-    "confirm-donation": "Donations unavailable",
-    "donation-minimum-message": "Developer donations are unavailable in this build.",
+    "confirm-donation": "Donation",
+    "donation-minimum-message": "The minimum amount for donations is a Zenny (0.01 WEC), Try again and Thanks.",
     "nym-processing-title": "Processing via NYM",
     "nym-enhanced": "NYM Enhanced",
     "nym-warning": "This transaction will be routed through the NYM mixnet for enhanced privacy. This may take slightly longer than standard transactions."
@@ -800,9 +794,7 @@
   },
   "ufvk": {
     "buttontexts": {
-      "view": [
-        "I have saved \n the viewing key"
-      ],
+      "view": ["I have saved \n the viewing key"],
       "change": [
         "",
         "Open New",
@@ -1092,7 +1084,7 @@
   },
   "uris": {
     "baduri": "Error: Bad URI.",
-    "notvalid": "That address is not valid.",
+    "notvalid": "Was not a valid wcash address",
     "notvalidparameter": "was not understood as a valid parameter",
     "notvalidvalue": "Didn't understand parameter value",
     "noindex": "Unknown index",
@@ -1105,6 +1097,6 @@
     "memo-too-long": "Memo too long in parameter",
     "error-http-not-allowed": "Error: Plain HTTP is only allowed for localhost. Use HTTPS for remote servers."
   },
-  "donation-button": "Donations unavailable",
-  "donation-legend": "Developer donations are disabled."
+  "donation-button": "Donate To Wcash Wallet ",
+  "donation-legend": "You are donating to Wcash Wallet activately, Thanks"
 }

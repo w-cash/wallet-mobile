@@ -29,11 +29,11 @@
   "save": "Kaydet",
   "copy": "Kopyala",
   "confirm": "Onayla",
-  "support": "Desteği aç",
+  "support": "Email gönder",
   "view-error": "Hatayı Görüntüle/Bildir",
   "menudrawer-acc": "Menü çekmecesini aç",
-  "donation": "Geliştirici bağışları bu Wcash Wallet derlemesinde kullanılamıyor.",
-  "zenny-tips-ab": "Geliştirici bağışları",
+  "donation": "Wcash Wallet'ya Bağış!\nWcash Wallet'i desteklediğiniz için teşekkürler!",
+  "zenny-tips-ab": "Zenny Tavsiyeleri",
   "restarting": "Error Sunucuya bağlanırken hata oluştu, uygulama birkaç saniye içinde yeniden başlayacak.",
   "change-privacy": "Yeni gizlilik politikası ",
   "email": "https://github.com/w-cash/wallet-mobile/issues",
@@ -155,8 +155,8 @@
     "alert-newwallet-body": "Yeni bir cüzdan oluşturmak istediğinizi ve mevcut cüzdana erişimi kaybetmeyi gerçekten onaylıyor musunuz.",
     "serverfirsttry": "Yukarıdaki sunucuya bağlanmaya çalışılırken bir hata oluştu, şu anda listedeki sunucular kontrol ediliyor.",
     "serversecondtry": "Sorun sunucudan kaynaklanıyor gibi görünmüyor. Başka bir şey oluyor.",
-    "alert-donation-title": "BAĞIŞLAR KULLANILAMIYOR",
-    "alert-donation-body": "Geliştirici bağışları bu Wcash Wallet derlemesinde kullanılamıyor.",
+    "alert-donation-title": "WCASH WALLET İPUCU",
+    "alert-donation-body": "Wcash Wallet’in Wcash’i daha faydalı hale getirmesine yardımcı olmak ister misiniz? Her işlemde Wcash Wallet’e bir Zenny (0.01 WEC) bağışlamak için katılın! Katılmak istiyorsanız Onayla’ya, istemiyorsanız İptal’e basın.",
     "recoverkeys": "Son anahtarları geri yükle",
     "recoverkeysinstall": "Bu cihazda kullanılan son anahtarlar kurtarıldı:",
     "customserver-unreachable": "Özel sunucunuz yanıt vermedi ve cüzdan bir hata döndürdü. Farklı bir sunucu seçmek için Ayarları açın veya daha sonra tekrar deneyin.",
@@ -179,8 +179,8 @@
     "insight": "Finansal İçgörü",
     "loadwalletfromseed-basic": "başka bir cüzdanı geri yükle",
     "addressbook": "Adres Defteri",
-    "tipzingolabs-basic": "Geliştirici bağışları",
-    "support": "Wcash Wallet support",
+    "tipzingolabs-basic": "Wcash Wallet’i Destekle",
+    "support": "{name} destek mail",
     "changeservernew-error": "Error Sunucuyu yenisiyle değiştirmeye çalışırken bir hata oluştu ",
     "readingwallet-error": "Error Yeni sunucuyla cüzdanı okuma girişiminde hata oluştu:",
     "differentchain-error": "Farklı bir zincire sahip bir sunucuya geçiyorsunuz, bu kurtarma ifadesi olmadan bu cüzdana artık erişiminiz olmayacak.",
@@ -212,8 +212,8 @@
     "incoming-funds": "Gelen fonlar\n",
     "valuetransfer-confirmed": "İşlem onaylandı",
     "payment-made": "Ödeme yapıldı",
-    "email-error-title": "Destek bağlantısı hatası",
-    "email-error-body": "Wcash Wallet destek sayfası açılamadı.",
+    "email-error-title": "Error E-posta istemcisi açılırken bir hata oluştu",
+    "email-error-body": "Raporu gönderebilmek için cihazınızın Ayarlar bölümüne gidin ve varsayılan bir e-posta uygulaması belirleyin.",
     "migration-title": "Cüzdan geçişi",
     "migration-body": "Cüzdanınızı yeni senkronizasyon sistemine taşıyoruz. Cihazınızı güç ve Wi-Fi'a bağlı tutun.\n\nBakiyeniz, taşıma işlemi ilerledikçe değişecektir. Endişelenmeyin, paranız güvende!"
   },
@@ -246,7 +246,7 @@
     "currencies": [
       {
         "value": "",
-        "text": "Piyasa fiyatını alma; yalnızca WEC tutarlarını göster."
+        "text": "Sadece WEC fiyatı alınsın, diğer para birimleri için fiyat sorgulanmasın."
       },
       {
         "value": "USD",
@@ -288,11 +288,11 @@
     "donations": [
       {
         "value": true,
-        "text": "Geliştirici bağışları bu derlemede kullanılamıyor."
+        "text": "Her işlemle birlikte Wcash Wallet’e bir Zenny (0.01 WEC) katkı sağla."
       },
       {
         "value": false,
-        "text": "Geliştirici bağışı yok."
+        "text": "Daha güvenli bir sistemi teşvik etmek için ödeme yapmayın."
       }
     ],
     "privacys": [
@@ -356,19 +356,19 @@
     "blockexplorers": [
       {
         "value": "Zcashexplorer",
-        "text": "Bu derlemede kullanılamıyor"
+        "text": "ZcashExplorer.App"
       },
       {
         "value": "Cipherscan",
-        "text": "Bu derlemede kullanılamıyor"
+        "text": "CipherScan.App"
       },
       {
         "value": "Zexplorer",
-        "text": "Bu derlemede kullanılamıyor"
+        "text": "ZExplorer.App"
       },
       {
         "value": "None",
-        "text": "Bu derlemede kullanılamıyor"
+        "text": "None"
       }
     ],
     "nochanges": "Herhangi bir değişiklik kaydedilmedi.",
@@ -401,12 +401,12 @@
     "language-title": "Dil",
     "islanguage": "Kaydetmek için bir dil seçmeniz gerekiyor.",
     "sendall-title": "Tüm fonları göndermeyi etkinleştir",
-    "donation-title": "Geliştirici bağışları",
+    "donation-title": "Wcash Wallet’a katkıda bulun",
     "privacy-title": "High Privacy",
     "mode-title": "Temel ve Gelişmiş Mod arasında geçiş yapın.",
     "rescanmenu-title": "Yeniden Tarama Butonunu Göster",
     "recoverywalletinfoondevice-title": "Cüzdan Kurtarma Bilgilerini Kaydet",
-    "performancelevel-title": "Eşitleme Performans Düzeyi",
+    "performancelevel-title": "Wcash Wallet Performance Level",
     "blockexplorer-title": "Block Explorer",
     "value-currency-": "Para birimi yok",
     "value-currency-USD": "Amerikan doları",
@@ -437,9 +437,9 @@
     "value-performancelevel-High": "High",
     "value-performancelevel-Medium": "Medium",
     "value-performancelevel-Low": "Low",
-    "value-blockexplorer-Zcashexplorer": "Bu derlemede kullanılamıyor",
-    "value-blockexplorer-Cipherscan": "Bu derlemede kullanılamıyor",
-    "value-blockexplorer-Zexplorer": "Bu derlemede kullanılamıyor",
+    "value-blockexplorer-Zcashexplorer": "Zcashexplorer",
+    "value-blockexplorer-Cipherscan": "Cipherscan",
+    "value-blockexplorer-Zexplorer": "Zexplorer",
     "value-blockexplorer-None": "Yok",
     "security-title": "Apply Device Security",
     "security-all": "Tümü",
@@ -505,10 +505,10 @@
     "zainod": "Sunucu URL",
     "network": "Ağ",
     "serverblock": "Sunucu Blok Yüksekliği ",
-    "zecprice": "WEC Fiyatı",
+    "zecprice": "WEC Fiyatı ",
     "unknown": "Bilinmeyen ",
     "title": "Sunucu Bilgisi",
-    "zingolib": "Cüzdan Çekirdeği Sürümü"
+    "zingolib": "Wcash Wallet Sürümü"
   },
   "rescan": {
     "title": "Yeniden Tara",
@@ -518,9 +518,7 @@
   },
   "seed": {
     "buttontexts": {
-      "new": [
-        "Yedekleme ifadesini\nKaydettim"
-      ],
+      "new": ["Yedekleme ifadesini\nKaydettim"],
       "change": [
         "",
         "Yeni aç",
@@ -533,12 +531,8 @@
         "Gerçek cüzdanınızı\nDeğiştirmek istiyor musunuz?",
         "Emin misiniz?"
       ],
-      "view": [
-        "Yedekleme ifadesini\nKaydettim"
-      ],
-      "restore": [
-        "Cüzdanı geri yükle"
-      ],
+      "view": ["Yedekleme ifadesini\nKaydettim"],
+      "restore": ["Cüzdanı geri yükle"],
       "backup": [
         "",
         "Geri yükle",
@@ -589,8 +583,8 @@
     "title": "Gönder",
     "toaddress": "Adrese",
     "invalidaddress": "Geçersiz adres!",
-    "znsnamenotfound": "Bu adres geçerli değil.",
-    "addressplaceholder": "Wcash adresi",
+    "znsnamenotfound": "Bu .wcash/.wec adı mevcut değil!",
+    "addressplaceholder": "Adres veya isim.wcash/.wec",
     "invalidamount": "Geçersiz tutar!",
     "invalidnumber": "Geçersiz sayı!",
     "spendable": "Harcanabilir:",
@@ -626,8 +620,8 @@
     "deshielded": "Korumasız",
     "lose-address-title": "YENİ BİR ADRES SEÇ",
     "lose-address-alert": "Adres alanında zaten geçerli bir adresiniz var. Onu değiştirmek istiyor musunuz?",
-    "confirm-donation": "Bağışlar kullanılamıyor",
-    "donation-minimum-message": "Geliştirici bağışları bu derlemede kullanılamıyor.",
+    "confirm-donation": "Bağış",
+    "donation-minimum-message": "Bağışlar için minimum tutar bir Zenny'dir (0.01 WEC). Lütfen tekrar deneyin ve teşekkürler.",
     "nym-processing-title": "NYM üzerinden işleniyor",
     "nym-enhanced": "NYM Gelişmiş",
     "nym-warning": "Bu işlem, gelişmiş gizlilik için NYM mixnet'i üzerinden yönlendirilecektir. Standart işlemlerden biraz daha uzun sürebilir."
@@ -796,13 +790,11 @@
   },
   "scanner": {
     "text": "Birleştirilmiş Tam Görüntüleme Anahtarını Tara",
-    "scanaddress": "Bir Wcash Adresi Tara"
+    "scanaddress": "Bir Wcash Adresini Tara"
   },
   "ufvk": {
     "buttontexts": {
-      "view": [
-        "Görüntüleme anahtarını\nKaydettim"
-      ],
+      "view": ["Görüntüleme anahtarını\nKaydettim"],
       "change": [
         "",
         "Yeni aç",
@@ -1092,7 +1084,7 @@
   },
   "uris": {
     "baduri": "Error: Geçersiz URI.",
-    "notvalid": "Bu adres geçerli değil.",
+    "notvalid": "Geçerli bir Wcash adresi değildi",
     "notvalidparameter": "Geçerli bir parametre olarak anlaşılamadı",
     "notvalidvalue": "Parametre değeri anlaşılamadı",
     "noindex": "Bilinmeyen indeks",
@@ -1105,6 +1097,6 @@
     "memo-too-long": "Parametrede memo çok uzun",
     "error-http-not-allowed": "Error: Düz HTTP yalnızca localhost için izin verilir. Uzak sunucular için HTTPS kullanın."
   },
-  "donation-button": "Bağışlar kullanılamıyor",
-  "donation-legend": "Geliştirici bağışları devre dışı."
+  "donation-button": "Wcash Wallet’a Bağış Yap",
+  "donation-legend": "Wcash Wallet'a aktif olarak bağış yapıyorsunuz, Teşekkürler"
 }

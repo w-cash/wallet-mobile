@@ -29,11 +29,11 @@
   "save": "Сохранить",
   "copy": "Копировать",
   "confirm": "Подтвердить",
-  "support": "Открыть поддержку",
+  "support": "Отправить Email",
   "view-error": "Просмотреть/Сообщить об ошибке",
   "menudrawer-acc": "Открыть панель меню",
-  "donation": "Пожертвования разработчикам недоступны в этой сборке Wcash Wallet.",
-  "zenny-tips-ab": "Пожертвования разработчикам",
+  "donation": "Спасибо за поддержку Wcash Wallet!",
+  "zenny-tips-ab": "Поддержать Zenny",
   "restarting": "Error подключения к Серверу, приложение перезапустится через несколько секунд.",
   "change-privacy": "Новая политика конфиденциальности: ",
   "email": "https://github.com/w-cash/wallet-mobile/issues",
@@ -155,8 +155,8 @@
     "alert-newwallet-body": "Подтвердите, что вы действительно хотите создать новый кошелёк и потерять доступ к текущему кошельку.",
     "serverfirsttry": "Попытка выполнить соединение с другим сервером. Текущий сервер может не работать.",
     "serversecondtry": "Похоже, что с этим сервером нет никаких проблем. Проблема в чём-то другом.",
-    "alert-donation-title": "ПОЖЕРТВОВАНИЯ НЕДОСТУПНЫ",
-    "alert-donation-body": "Пожертвования разработчикам недоступны в этой сборке Wcash Wallet.",
+    "alert-donation-title": "ПОДДЕРЖИВАЕМЫЕ WCASH WALLET",
+    "alert-donation-body": "Хотите помочь Wcash Wallet сделать Wcash более полезным? Подпишитесь на чаевые в размере одного Zenny (0.01 WEC) в пользу Wcash Wallet за каждую транзакцию! Если да, нажмите «Подтвердить», в противном случае нажмите «Отмена».",
     "recoverkeys": "Восстановить последние ​​ключи",
     "recoverkeysinstall": "Восстановлены ​​ключи, которые ранее использовались на этом устройстве:",
     "customserver-unreachable": "Ваш пользовательский сервер не ответил, а кошелёк вернул ошибку. Откройте Настройки, чтобы выбрать другой, или повторите попытку позже.",
@@ -179,8 +179,8 @@
     "insight": "Аналитика",
     "loadwalletfromseed-basic": "восстановить другой кошелек",
     "addressbook": "Адресная книга",
-    "tipzingolabs-basic": "Пожертвования разработчикам",
-    "support": "Wcash Wallet support",
+    "tipzingolabs-basic": "Поддержать Wcash Wallet",
+    "support": "Email поддержки {name}",
     "changeservernew-error": "Error при попытке изменить сервер на другой: ",
     "readingwallet-error": "Error при попытке прочитать кошелёк с новым сервером:",
     "differentchain-error": "ВНИМАНИЕ! Если вы перейдёте на сервер в другой сети, у вас больше не будет доступа к данному кошельку без наличия начальной фразы.",
@@ -212,8 +212,8 @@
     "incoming-funds": "Входящие средства\n",
     "valuetransfer-confirmed": "Транзакция подтверждена",
     "payment-made": "Платеж произведен\n",
-    "email-error-title": "Ошибка ссылки поддержки",
-    "email-error-body": "Не удалось открыть страницу поддержки Wcash Wallet.",
+    "email-error-title": "Error почтового клиента",
+    "email-error-body": "Перейдите в настройки вашего устройства и определите почтовое приложение по умолчанию.",
     "migration-title": "Миграция кошелька",
     "migration-body": "Мы переносим ваш кошелёк на новую систему синхронизации. Не отключайте устройство от сети и Wi-Fi.\n\nВаш баланс будет меняться по мере переноса. Не волнуйтесь, ваши средства в безопасности!"
   },
@@ -246,7 +246,7 @@
     "currencies": [
       {
         "value": "",
-        "text": "Не загружать рыночную цену; показывать только суммы WEC."
+        "text": "Не показывать сумму в фиатных валютах, только WEC."
       },
       {
         "value": "USD",
@@ -288,11 +288,11 @@
     "donations": [
       {
         "value": true,
-        "text": "Пожертвования разработчикам недоступны в этой сборке."
+        "text": "Чаевые для Wcash Wallet в размере (0.01 WEC) за каждую транзакцию."
       },
       {
         "value": false,
-        "text": "Без пожертвования разработчикам."
+        "text": "Чаевые позволяют улучшать кошелёк и повышать его безопасность."
       }
     ],
     "privacys": [
@@ -356,19 +356,19 @@
     "blockexplorers": [
       {
         "value": "Zcashexplorer",
-        "text": "Недоступно в этой сборке"
+        "text": "ZcashExplorer.App"
       },
       {
         "value": "Cipherscan",
-        "text": "Недоступно в этой сборке"
+        "text": "CipherScan.App"
       },
       {
         "value": "Zexplorer",
-        "text": "Недоступно в этой сборке"
+        "text": "ZExplorer.App"
       },
       {
         "value": "None",
-        "text": "Недоступно в этой сборке"
+        "text": "None"
       }
     ],
     "nochanges": "Изменения не зарегистрированы.",
@@ -401,12 +401,12 @@
     "language-title": "Язык",
     "islanguage": "Выберите язык для приложения.",
     "sendall-title": "Включить отправку всех средств",
-    "donation-title": "Пожертвования разработчикам",
+    "donation-title": "Поддержать Wcash Wallet",
     "privacy-title": "High Privacy",
     "mode-title": "Переключение между основным или расширенным режимом",
     "rescanmenu-title": "Показать кнопку повторного сканирования",
     "recoverywalletinfoondevice-title": "Сохраните данные для восстановления кошелька",
-    "performancelevel-title": "Уровень производительности синхронизации",
+    "performancelevel-title": "Wcash Wallet Performance Level",
     "blockexplorer-title": "Block Explorer",
     "value-currency-": "Без указания валюты",
     "value-currency-USD": "Доллар США",
@@ -437,9 +437,9 @@
     "value-performancelevel-High": "High",
     "value-performancelevel-Medium": "Medium",
     "value-performancelevel-Low": "Low",
-    "value-blockexplorer-Zcashexplorer": "Недоступно в этой сборке",
-    "value-blockexplorer-Cipherscan": "Недоступно в этой сборке",
-    "value-blockexplorer-Zexplorer": "Недоступно в этой сборке",
+    "value-blockexplorer-Zcashexplorer": "Zcashexplorer",
+    "value-blockexplorer-Cipherscan": "Cipherscan",
+    "value-blockexplorer-Zexplorer": "Zexplorer",
     "value-blockexplorer-None": "Нет",
     "security-title": "Apply Device Security",
     "security-all": "Все",
@@ -508,7 +508,7 @@
     "zecprice": "Цена WEC",
     "unknown": "Неизвестно",
     "title": "Данные сервера",
-    "zingolib": "Версия ядра кошелька"
+    "zingolib": "Версия Wcash Wallet"
   },
   "rescan": {
     "title": "Пересканировать",
@@ -518,9 +518,7 @@
   },
   "seed": {
     "buttontexts": {
-      "new": [
-        "Я сохранил \n начальную фразу"
-      ],
+      "new": ["Я сохранил \n начальную фразу"],
       "change": [
         "",
         "Открыть новый",
@@ -533,12 +531,8 @@
         "Вы действительно хотите \n изменить свой \n текущий сервер?",
         "Вы уверены?"
       ],
-      "view": [
-        "Я сохранил \n начальную фразу"
-      ],
-      "restore": [
-        "Восстановить кошелёк"
-      ],
+      "view": ["Я сохранил \n начальную фразу"],
+      "restore": ["Восстановить кошелёк"],
       "backup": [
         "",
         "Восстановить",
@@ -589,8 +583,8 @@
     "title": "Отправить",
     "toaddress": "На адрес",
     "invalidaddress": "Некорректный адрес!",
-    "znsnamenotfound": "Недопустимый адрес.",
-    "addressplaceholder": "Адрес Wcash",
+    "znsnamenotfound": "Такого имени .wcash/.wec не существует!",
+    "addressplaceholder": "Адрес или имя.wcash/.wec",
     "invalidamount": "Недопустимая сумма!",
     "invalidnumber": "Некорректное значение!",
     "spendable": "Доступно: ",
@@ -626,8 +620,8 @@
     "deshielded": "Деэкранировано",
     "lose-address-title": "ВЫБЕРИТЕ НОВЫЙ АДРЕС",
     "lose-address-alert": "У вас уже есть действительный адрес в поле для адреса. Вы желаете его заменить?",
-    "confirm-donation": "Пожертвования недоступны",
-    "donation-minimum-message": "Пожертвования разработчикам недоступны в этой сборке.",
+    "confirm-donation": "Пожертвование",
+    "donation-minimum-message": "Минимальная сумма пожертвований — зенни (0,01 WEC). Попробуйте еще раз и спасибо.",
     "nym-processing-title": "Обработка через NYM",
     "nym-enhanced": "NYM Улучшенный",
     "nym-warning": "Эта транзакция будет направлена через NYM-миксер для повышения конфиденциальности. Это может занять немного больше времени, чем стандартные транзакции."
@@ -796,13 +790,11 @@
   },
   "scanner": {
     "text": "Сканировать Унифицированный ключ полного просмотра",
-    "scanaddress": "Сканировать адрес Wcash"
+    "scanaddress": "Сканировать Wcash адрес"
   },
   "ufvk": {
     "buttontexts": {
-      "view": [
-        "Я сохранил \n ключ просмотра"
-      ],
+      "view": ["Я сохранил \n ключ просмотра"],
       "change": [
         "",
         "Открыть новый",
@@ -1092,7 +1084,7 @@
   },
   "uris": {
     "baduri": "Error: нерабочий URI-адрес.",
-    "notvalid": "Недопустимый адрес.",
+    "notvalid": "Не является допустимым адресом wcash",
     "notvalidparameter": "недопустимый параметр",
     "notvalidvalue": "Значение параметра непонятно",
     "noindex": "Неизвестный индекс",
@@ -1105,6 +1097,6 @@
     "memo-too-long": "Слишком длинный memo в параметре",
     "error-http-not-allowed": "Error: Незащищённый HTTP разрешён только для localhost. Для удалённых серверов используйте HTTPS."
   },
-  "donation-button": "Пожертвования недоступны",
-  "donation-legend": "Пожертвования разработчикам отключены."
+  "donation-button": "Задонатить на разработку Wcash Wallet ",
+  "donation-legend": "Вы вносите пожертвования Wcash Wallet активно, спасибо"
 }

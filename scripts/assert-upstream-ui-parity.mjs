@@ -5,10 +5,10 @@ import { fileURLToPath } from 'node:url';
 
 const repo = dirname(dirname(fileURLToPath(import.meta.url)));
 const roots = ['app', 'screens', 'ui', 'assets'];
-const upstreamCount = 450;
+const upstreamCount = 452;
 const upstreamDigest =
-  '84f4906a7158fe701a1f6b04058cdc9ade8ff59a8a7d1c7e76ab4283463600a0';
-const brandedDigests = new Map([
+  'c14027c3a01b23eff5b6675bb03db3835e306f1d90333596e9e98a69e9f7220e';
+const reviewedExceptionDigests = new Map([
   [
     'assets/img/logobig-zingo-beta.png',
     'c878506b87ee8497b7ae3d0153fdd9c2dbda6732e05361722945f36d94be70b5',
@@ -23,11 +23,11 @@ const brandedDigests = new Map([
   ],
   [
     'app/AppErrorBoundary.tsx',
-    'deaf1cf3a66676b1a0471c91bcc7d830b592415c26965d91a8fcaec3a71a07b5',
+    '1009ddd9ca7097c4560a1e2bfb77d18b4c36295f038d9e184fb25758bf67764b',
   ],
   [
     'app/AppState/const/GlobalConst.ts',
-    'fabfefa60fb6c8b32a63d82a77527827420fc59659c5c651e67d4f3bd9c3a3c4',
+    '6588b47872f53d8b3a0d63b968eb02c2fdf12b6e207a38dabf228420fe3e39bd',
   ],
   [
     'app/AppState/enums/CurrencyNameEnum.ts',
@@ -42,36 +42,28 @@ const brandedDigests = new Map([
     '5d2a69d37ae6114db8f16ddd3a24d07633dbe22b8a151b4f0c102df61c790b7f',
   ],
   [
-    'app/LoadingApp/LoadingApp.tsx',
-    '76d4826c1b9884ff02ab15a49ff9fbb7b9c9577da065ffa6524ceed30f748145',
-  ],
-  [
-    'app/services/SettingsFileImpl.ts',
-    '8faa4d61c3def2e921aae2baf5456bee6d8aaf20c5a55096066accf55d61c550',
-  ],
-  [
     'app/services/sendEmail.ts',
     '9c4545888c07ffc8cc3a92331c401be71a6e21949c3f9471ce236d075df6bf96',
   ],
   [
     'app/translations/en.json',
-    'b308568a27bbc4e426e1a3ab6d242be651f227fcb6738a9bac40b2bc63fde92d',
+    '0beb347c7e89e366acd35f339983d425e352fe636352b77a1bff9fedc37c4e40',
   ],
   [
     'app/translations/es.json',
-    '0536717f8018fb56a364efff6df739abb0d48bb90c46b6a86258e99435234d9c',
+    '77781fe852d6fd5115cce56b18187ec9a436b01bfe3d6eb2af640ef51921aed2',
   ],
   [
     'app/translations/pt.json',
-    '92ac7f17e42156cda97e2b2f2346196d0c94d9c25e2eae781c232921191403fa',
+    'cd4ecaef1661e8ddb241ad2ab057d9378f44cf581d4d6634cc5b1dbc5ea3c04a',
   ],
   [
     'app/translations/ru.json',
-    'ba7b7118ba3689eb997199aeabf679c965b0cd8d24cea7b2b6b5c1bcb7a33cba',
+    'b99f3ca8881eec4ce168a9263ef570ddf6ecc846b4d74955df47197ba154821b',
   ],
   [
     'app/translations/tr.json',
-    'ac43caeb7f6268b4ec16ea567026f405a54ccfc8d789dedbaa85c139778251a8',
+    '67aee8e1948161030fef83d06b85b8f73064a16040a1276e753b2c3d7855fbaf',
   ],
   [
     'app/uris/fetchServerList.ts',
@@ -79,7 +71,7 @@ const brandedDigests = new Map([
   ],
   [
     'app/uris/resolveZnsName.ts',
-    'fc2ec3d50291ee275ad01f0cc3ce816190f83db3279aec41cb9e3916cdda687a',
+    'e3f5adc67bac803a5c09bc2c0d0e1295e743c633230b91b7979b26c52cbbab45',
   ],
   [
     'app/uris/serverUris.ts',
@@ -87,7 +79,7 @@ const brandedDigests = new Map([
   ],
   [
     'app/utils/Utils.ts',
-    'e0f17862e7293cd6a70416d791c01eac7dbe1b2b160c0b129e42262568545a32',
+    '0fb579c13a7016f08a3f6eb7087a832e0f016a1d00a6cabac55b5ad5a3223b3c',
   ],
   [
     'app/utils/ZingoAppData.ts',
@@ -107,12 +99,12 @@ const brandedDigests = new Map([
   ],
 ]);
 
-const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
+const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 
-const filesBelow = async (dir) => {
+const filesBelow = async dir => {
   const entries = await readdir(dir, { withFileTypes: true });
   const files = await Promise.all(
-    entries.map((entry) => {
+    entries.map(entry => {
       const path = join(dir, entry.name);
       return entry.isDirectory() ? filesBelow(path) : [path];
     }),
@@ -121,10 +113,10 @@ const filesBelow = async (dir) => {
 };
 
 const paths = (
-  await Promise.all(roots.map((root) => filesBelow(join(repo, root))))
+  await Promise.all(roots.map(root => filesBelow(join(repo, root))))
 )
   .flat()
-  .map((path) => ({
+  .map(path => ({
     path,
     relativePath: relative(repo, path).split(sep).join('/'),
   }))
@@ -137,7 +129,7 @@ const paths = (
   );
 
 const upstreamPaths = paths.filter(
-  ({ relativePath }) => !brandedDigests.has(relativePath),
+  ({ relativePath }) => !reviewedExceptionDigests.has(relativePath),
 );
 if (upstreamPaths.length !== upstreamCount) {
   throw new Error(
@@ -157,13 +149,15 @@ if (actualUpstreamDigest !== upstreamDigest) {
   throw new Error(`Upstream UI digest changed: ${actualUpstreamDigest}`);
 }
 
-for (const [relativePath, expectedDigest] of brandedDigests) {
+for (const [relativePath, expectedDigest] of reviewedExceptionDigests) {
   const actualDigest = digest(await readFile(join(repo, relativePath)));
   if (actualDigest !== expectedDigest) {
-    throw new Error(`Branding file changed: ${relativePath} ${actualDigest}`);
+    throw new Error(
+      `Reviewed UI exception changed: ${relativePath} ${actualDigest}`,
+    );
   }
 }
 
 console.log(
-  `Verified ${upstreamCount} byte-identical upstream UI files and ${brandedDigests.size} branding files.`,
+  `Verified ${upstreamCount} byte-identical upstream UI files and ${reviewedExceptionDigests.size} reviewed UI exceptions.`,
 );

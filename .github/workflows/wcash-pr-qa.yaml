@@ -68,7 +68,10 @@ jobs:
 
       - name: Test the Wcash-only host boundary
         working-directory: rust
-        run: cargo test --locked -p wcash-mobile-adapter -p wcash-mobile-ffi
+        run: |
+          cargo tree --locked -p wcash-mobile-ffi > "$RUNNER_TEMP/wcash-tree.txt"
+          ! grep -Eiq 'nym|mixnet' "$RUNNER_TEMP/wcash-tree.txt"
+          cargo test --locked -p wcash-mobile-adapter -p wcash-mobile-ffi
 
   android-boundary:
     name: Android Wcash boundary
@@ -130,6 +133,8 @@ jobs:
         run: |
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
           export ANDROID_NDK_ROOT="$ANDROID_NDK_HOME"
+          cargo tree --locked -p wcash-mobile-ffi > "$RUNNER_TEMP/wcash-tree.txt"
+          ! grep -Eiq 'nym|mixnet' "$RUNNER_TEMP/wcash-tree.txt"
           cargo ndk --target aarch64-linux-android build --locked --release \
             --package wcash-mobile-ffi
           test -f target/aarch64-linux-android/release/libzingo.so
@@ -182,6 +187,8 @@ jobs:
           export BINDGEN_EXTRA_CLANG_ARGS_aarch64_apple_ios_sim="--target=arm64-apple-ios-simulator -isysroot $simulator_sdk"
           export CFLAGS_aarch64_apple_ios_sim="--target=arm64-apple-ios-simulator -isysroot $simulator_sdk"
           export CXXFLAGS_aarch64_apple_ios_sim="$CFLAGS_aarch64_apple_ios_sim"
+          cargo tree --locked -p wcash-mobile-ffi > "$RUNNER_TEMP/wcash-tree.txt"
+          ! grep -Eiq 'nym|mixnet' "$RUNNER_TEMP/wcash-tree.txt"
           cargo build --locked --release --target aarch64-apple-ios-sim \
             --package wcash-mobile-ffi
           test -f target/aarch64-apple-ios-sim/release/libzingo.a

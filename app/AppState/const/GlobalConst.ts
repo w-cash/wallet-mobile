@@ -23,7 +23,7 @@ export const GlobalConst = {
   serviceKeyChain: 'WCASH_WALLET',
   replyTo: '\nReply to: \n',
   expireBlocks: 40,
-  zingolib: 'Zingolib',
+  zingolib: 'Wcash Wallet',
   zingolibError: '<error>',
   zingolibNone: '<none>',
   transactionFilterThreshold: '500',

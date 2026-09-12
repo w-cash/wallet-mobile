@@ -29,17 +29,15 @@ COPY uniffi-bindgen/ /opt/zingo/rust/uniffi-bindgen/
 ARG ZINGO_MOBILE_GIT_DESCRIBE
 ENV ZINGO_MOBILE_GIT_DESCRIBE=${ZINGO_MOBILE_GIT_DESCRIBE}
 
-COPY nym-proxy-ffi/ /opt/zingo/rust/nym-proxy-ffi/
-
 
 RUN rustup default stable
 
 RUN cargo install --force --locked bindgen-cli
 
-RUN cargo run --release --package zingo-uniffi-bindgen \
+RUN cargo run --locked --release --package zingo-uniffi-bindgen \
     --bin zingo-wallet-uniffi-bindgen -- \
     generate ../wcash-mobile-ffi/src/zingo.udl --language kotlin \
-    --out-dir ./src
+    --out-dir ../generated-kotlin
 
 RUN cargo install --version 4.0.1 cargo-ndk
 
@@ -58,7 +56,7 @@ ENV CC=aarch64-linux-android26-clang
 
 ENV CFLAGS_aarch64_linux_android="-mno-outline-atomics"
 ENV CXXFLAGS_aarch64_linux_android="-mno-outline-atomics"
-RUN cargo ndk --target aarch64-linux-android build --release --package wcash-mobile-ffi
+RUN cargo ndk --target aarch64-linux-android build --locked --release --package wcash-mobile-ffi
 RUN llvm-strip --strip-all ../target/aarch64-linux-android/release/libzingo.so
 RUN llvm-objcopy \
     --remove-section .comment \
@@ -69,7 +67,7 @@ RUN sha256sum ../target/aarch64-linux-android/release/libzingo.so
 ENV CARGO_FEATURE_STD=false
 ENV CC=armv7a-linux-androideabi26-clang
 
-RUN cargo ndk --target armv7-linux-androideabi build --release --package wcash-mobile-ffi
+RUN cargo ndk --target armv7-linux-androideabi build --locked --release --package wcash-mobile-ffi
 RUN llvm-strip --strip-all ../target/armv7-linux-androideabi/release/libzingo.so
 RUN llvm-objcopy \
     --remove-section .comment \
@@ -81,7 +79,7 @@ ENV CARGO_FEATURE_STD=false
 ENV CC=i686-linux-android26-clang
 
 #-DBROKEN_CLANG_ATOMICS
-RUN cargo ndk --target i686-linux-android build --release --package wcash-mobile-ffi
+RUN cargo ndk --target i686-linux-android build --locked --release --package wcash-mobile-ffi
 RUN llvm-strip --strip-all ../target/i686-linux-android/release/libzingo.so
 RUN llvm-objcopy \
     --remove-section .comment \
@@ -92,51 +90,9 @@ RUN sha256sum ../target/i686-linux-android/release/libzingo.so
 ENV CARGO_FEATURE_STD=false
 ENV CC=x86_64-linux-android26-clang
 
-RUN cargo ndk --target x86_64-linux-android build --release --package wcash-mobile-ffi
+RUN cargo ndk --target x86_64-linux-android build --locked --release --package wcash-mobile-ffi
 RUN llvm-strip --strip-all ../target/x86_64-linux-android/release/libzingo.so
 RUN llvm-objcopy \
     --remove-section .comment \
     ../target/x86_64-linux-android/release/libzingo.so
 RUN sha256sum ../target/x86_64-linux-android/release/libzingo.so
-
-# ===== Nym proxy shim (nym-proxy-ffi) =====
-# Cross-compile the shim per ABI in its own workspace (nym-sdk resolves only in
-# nym-proxy-ffi's lock), mirroring the wallet's per-ABI CC/env above. Kotlin bindings
-# come from library mode against a built .so (proc-macro uniffi, no UDL).
-WORKDIR /opt/zingo/rust/nym-proxy-ffi
-ENV SHIM=libzingo_nym_proxy_ffi.so
-
-# aarch64
-ENV CARGO_FEATURE_STD=true
-ENV CC=aarch64-linux-android26-clang
-RUN cargo ndk --target aarch64-linux-android build --release --package zingo-nym-proxy-ffi
-
-RUN cargo run --release --manifest-path /opt/zingo/rust/Cargo.toml \
-    --package zingo-uniffi-bindgen --bin zingo-uniffi-bindgen -- generate \
-    --library target/aarch64-linux-android/release/$SHIM \
-    --language kotlin --out-dir generated-kotlin
-RUN llvm-strip --strip-all target/aarch64-linux-android/release/$SHIM
-RUN llvm-objcopy --remove-section .comment target/aarch64-linux-android/release/$SHIM
-RUN sha256sum target/aarch64-linux-android/release/$SHIM
-
-# armv7
-ENV CARGO_FEATURE_STD=false
-ENV CC=armv7a-linux-androideabi26-clang
-RUN cargo ndk --target armv7-linux-androideabi build --release --package zingo-nym-proxy-ffi
-RUN llvm-strip --strip-all target/armv7-linux-androideabi/release/$SHIM
-RUN llvm-objcopy --remove-section .comment target/armv7-linux-androideabi/release/$SHIM
-RUN sha256sum target/armv7-linux-androideabi/release/$SHIM
-
-# i686 - x86
-ENV CC=i686-linux-android26-clang
-RUN cargo ndk --target i686-linux-android build --release --package zingo-nym-proxy-ffi
-RUN llvm-strip --strip-all target/i686-linux-android/release/$SHIM
-RUN llvm-objcopy --remove-section .comment target/i686-linux-android/release/$SHIM
-RUN sha256sum target/i686-linux-android/release/$SHIM
-
-# x86_64
-ENV CC=x86_64-linux-android26-clang
-RUN cargo ndk --target x86_64-linux-android build --release --package zingo-nym-proxy-ffi
-RUN llvm-strip --strip-all target/x86_64-linux-android/release/$SHIM
-RUN llvm-objcopy --remove-section .comment target/x86_64-linux-android/release/$SHIM
-RUN sha256sum target/x86_64-linux-android/release/$SHIM

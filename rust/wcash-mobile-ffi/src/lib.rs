@@ -504,7 +504,10 @@ pub fn parse_ufvk(_ufvk: String) -> Result<String, ZingolibError> {
 }
 
 pub fn get_version() -> Result<String, ZingolibError> {
-    Ok("wcash-wallet-core-58bc22e-wcash-mobile-adapter".to_owned())
+    Ok(format!(
+        "wcash-wallet-core-{}-wcash-mobile-adapter",
+        wcash_mobile_adapter::WCASH_WALLET_CORE_REV
+    ))
 }
 
 pub fn get_messages(_address: String) -> Result<String, ZingolibError> {
@@ -743,6 +746,17 @@ mod tests {
     fn unsupported_surfaces_never_look_like_success() {
         let error = get_messages(String::new()).expect_err("memo history is unavailable");
         assert!(error.to_string().contains("unsupported Wcash feature"));
+    }
+
+    #[test]
+    fn version_reports_the_locked_wcash_wallet_core_revision() {
+        assert_eq!(
+            get_version().unwrap(),
+            format!(
+                "wcash-wallet-core-{}-wcash-mobile-adapter",
+                wcash_mobile_adapter::WCASH_WALLET_CORE_REV
+            )
+        );
     }
 
     #[test]

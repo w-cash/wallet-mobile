@@ -193,9 +193,10 @@ export default class SettingsFileImpl {
           settings.selectServer = SelectServerEnum.auto;
         }
       }
-      // No Wcash donation address has been approved for this build.
-      settings.donation = false;
-      settings.firstUpdateWithDonation = false;
+      if (!settings.hasOwnProperty(SettingsNameEnum.donation)) {
+        // this means the App shows up an Alert asking about the tip/donation new feature.
+        settings.firstUpdateWithDonation = true;
+      }
       // old security options that have to be removed and to add the new one.
       if (settings.hasOwnProperty(SettingsNameEnum.security)) {
         const sec: SecurityType = settings.security;

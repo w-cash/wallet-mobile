@@ -45,6 +45,9 @@ const TRANSACTION_LOCK_BLOCKS: u32 = 40;
 const LOCAL_REGTEST_CONFIRMATIONS: u32 = 1;
 const MOBILE_PENDING_TABLE: &str = "wcash_mobile_pending_transactions";
 
+/// Exact wallet-core revision selected by the locked `zingolib` dependency.
+pub const WCASH_WALLET_CORE_REV: &str = env!("WCASH_WALLET_CORE_REV");
+
 /// Networks implemented by the reviewed Wcash backend.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -368,7 +371,7 @@ impl WcashMobileAdapter {
         let latest = client.latest_block().await.map_err(core_error)?;
         Ok(serde_json::to_string_pretty(&serde_json::json!({
             "version": "0.1.0",
-            "git_commit": "58bc22e",
+            "git_commit": WCASH_WALLET_CORE_REV,
             "server_uri": endpoint,
             "vendor": "Wcash Wallet",
             "taddr_support": true,
@@ -1864,6 +1867,20 @@ mod tests {
     use zingolib::wcash::BlockRef;
 
     const PHRASE: &str = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art";
+
+    #[test]
+    fn wallet_core_identity_comes_from_the_locked_git_source() {
+        assert_eq!(WCASH_WALLET_CORE_REV.len(), 40);
+        assert!(
+            WCASH_WALLET_CORE_REV
+                .bytes()
+                .all(|byte| byte.is_ascii_hexdigit())
+        );
+        assert!(include_str!("../../Cargo.lock").contains(&format!(
+            "wallet-core.git?rev={0}#{0}",
+            WCASH_WALLET_CORE_REV
+        )));
+    }
 
     #[test]
     fn chain_hints_fail_closed_without_mainnet() {

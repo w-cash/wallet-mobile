@@ -39,24 +39,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
-name = "android_log-sys"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85965b6739a430150bdd138e2374a98af0c3ee0d030b3bb7fc3bddff58d0102e"
-
-[[package]]
-name = "android_logger"
-version = "0.11.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8619b80c242aa7bd638b5c7ddd952addeecb71f69c75e33f1d47b2804f8f883a"
-dependencies = [
- "android_log-sys",
- "env_logger",
- "log",
- "once_cell",
-]
-
-[[package]]
 name = "android_system_properties"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1183,16 +1165,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
 
 [[package]]
-name = "env_logger"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cd405aab171cb85d6735e5c8d9db038c17d3ca007a4d2c25f337935c3d90580"
-dependencies = [
- "log",
- "regex",
-]
-
-[[package]]
 name = "equihash"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1880,22 +1852,6 @@ dependencies = [
  "tokio",
  "tower-service",
  "winapi",
-]
-
-[[package]]
-name = "hyper-rustls"
-version = "0.27.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33ca68d021ef39cf6463ab54c1d0f5daf03377b70561305bb89a8f83aab66e0f"
-dependencies = [
- "http",
- "hyper",
- "hyper-util",
- "rustls 0.23.42",
- "tokio",
- "tokio-rustls",
- "tower-service",
- "webpki-roots 1.0.9",
 ]
 
 [[package]]
@@ -2682,7 +2638,7 @@ dependencies = [
 [[package]]
 name = "pepper-sync"
 version = "0.5.0"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=58bc22ec63bbe3eddab5f961c137836431589c95#58bc22ec63bbe3eddab5f961c137836431589c95"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
 dependencies = [
  "bip32",
  "byteorder",
@@ -3256,20 +3212,16 @@ dependencies = [
  "http-body",
  "http-body-util",
  "hyper",
- "hyper-rustls",
  "hyper-util",
  "js-sys",
  "log",
  "percent-encoding",
  "pin-project-lite",
- "rustls 0.23.42",
- "rustls-pki-types",
  "serde",
  "serde_json",
  "serde_urlencoded",
  "sync_wrapper",
  "tokio",
- "tokio-rustls",
  "tower",
  "tower-http",
  "tower-service",
@@ -3277,7 +3229,6 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "webpki-roots 1.0.9",
 ]
 
 [[package]]
@@ -4216,18 +4167,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tokio-socks"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7e2948f60dbe26b35f2c7fb74ac2854c1fddded0fe9d7548fcc674a246f7615"
-dependencies = [
- "either",
- "futures-util",
- "thiserror 1.0.69",
- "tokio",
-]
-
-[[package]]
 name = "tokio-stream"
 version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5011,6 +4950,7 @@ dependencies = [
 [[package]]
 name = "wcash-genesis"
 version = "0.1.0"
+source = "git+https://github.com/w-cash/wolf.git?rev=168b59310056964a6347ed993ace8f8d1385cde1#168b59310056964a6347ed993ace8f8d1385cde1"
 dependencies = [
  "blake2b_simd",
  "sha2 0.10.9",
@@ -5050,6 +4990,7 @@ dependencies = [
 [[package]]
 name = "wcash-wallet"
 version = "0.1.0"
+source = "git+https://github.com/w-cash/wolf.git?rev=168b59310056964a6347ed993ace8f8d1385cde1#168b59310056964a6347ed993ace8f8d1385cde1"
 dependencies = [
  "async-trait",
  "blake2b_simd",
@@ -5736,6 +5677,7 @@ dependencies = [
 [[package]]
 name = "zebra-chain"
 version = "12.0.0"
+source = "git+https://github.com/w-cash/wolf.git?rev=168b59310056964a6347ed993ace8f8d1385cde1#168b59310056964a6347ed993ace8f8d1385cde1"
 dependencies = [
  "bech32",
  "bitflags",
@@ -5890,33 +5832,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "zingo"
-version = "2.0.0"
-dependencies = [
- "android_logger",
- "hex",
- "http",
- "json",
- "lazy_static",
- "log",
- "once_cell",
- "pepper-sync",
- "rustls 0.23.42",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "uniffi 0.29.5",
- "uniffi_build",
- "zcash_address",
- "zcash_client_backend",
- "zcash_keys",
- "zcash_protocol",
- "zingo_common_components",
- "zingolib",
- "zip32",
-]
-
-[[package]]
 name = "zingo-consensus"
 version = "0.1.0"
 source = "git+https://github.com/zingolabs/infrastructure.git?rev=89cf104a2416144d1bbbae30aca02bec062d1492#89cf104a2416144d1bbbae30aca02bec062d1492"
@@ -5924,7 +5839,7 @@ source = "git+https://github.com/zingolabs/infrastructure.git?rev=89cf104a241614
 [[package]]
 name = "zingo-memo"
 version = "0.1.1"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=58bc22ec63bbe3eddab5f961c137836431589c95#58bc22ec63bbe3eddab5f961c137836431589c95"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
 dependencies = [
  "zcash_address",
  "zcash_encoding",
@@ -5935,7 +5850,7 @@ dependencies = [
 [[package]]
 name = "zingo-net-diag"
 version = "0.1.0"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=58bc22ec63bbe3eddab5f961c137836431589c95#58bc22ec63bbe3eddab5f961c137836431589c95"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
 dependencies = [
  "serde",
 ]
@@ -5943,43 +5858,32 @@ dependencies = [
 [[package]]
 name = "zingo-netutils"
 version = "5.0.1"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=58bc22ec63bbe3eddab5f961c137836431589c95#58bc22ec63bbe3eddab5f961c137836431589c95"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
 dependencies = [
  "http",
- "hyper-util",
  "lightwallet-protocol",
  "rand 0.8.7",
- "reqwest",
  "rustls 0.23.42",
  "serde",
  "thiserror 2.0.19",
- "tokio",
  "tokio-rustls",
- "tokio-socks",
  "tokio-stream",
  "tonic",
- "tower",
- "zingo-net-diag",
 ]
 
 [[package]]
 name = "zingo-price"
 version = "0.1.0"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=58bc22ec63bbe3eddab5f961c137836431589c95#58bc22ec63bbe3eddab5f961c137836431589c95"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
 dependencies = [
  "byteorder",
- "serde",
- "serde_json",
- "thiserror 2.0.19",
  "zcash_encoding",
- "zingo-net-diag",
- "zingo-netutils",
 ]
 
 [[package]]
 name = "zingo-status"
 version = "0.2.1"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=58bc22ec63bbe3eddab5f961c137836431589c95#58bc22ec63bbe3eddab5f961c137836431589c95"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
 dependencies = [
  "byteorder",
  "zcash_protocol",
@@ -6010,7 +5914,7 @@ source = "git+https://github.com/zingolabs/infrastructure.git?rev=89cf104a241614
 [[package]]
 name = "zingolib"
 version = "6.0.0"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=58bc22ec63bbe3eddab5f961c137836431589c95#58bc22ec63bbe3eddab5f961c137836431589c95"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
 dependencies = [
  "append-only-vec",
  "bech32",
@@ -6071,7 +5975,7 @@ dependencies = [
 [[package]]
 name = "zingolib_testutils"
 version = "0.1.0"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=58bc22ec63bbe3eddab5f961c137836431589c95#58bc22ec63bbe3eddab5f961c137836431589c95"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
 dependencies = [
  "http",
  "nonempty",

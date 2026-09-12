@@ -5,12 +5,21 @@
 // Usage:
 //   node build_android_local.mjs            # builds all 4 ABIs
 //   node build_android_local.mjs arm64      # builds only arm64
+//   node build_android_local.mjs arm64 --regtest-qa-apk
+//                                           # clean, build, test, and assemble
+//                                             the ARM64 Local Regtest QA APK
 //
 // Valid ABI aliases: arm64 | armv7 | x86 | x86_64
 // Cross-platform: Linux, macOS, Windows.
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, copyFileSync, readFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  copyFileSync,
+  readFileSync,
+  rmSync,
+} from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,9 +27,19 @@ import { fileURLToPath } from 'node:url';
 const ANDROID_DIR = dirname(fileURLToPath(import.meta.url));
 const RUST_DIR = resolve(ANDROID_DIR, '..');
 const REPO_DIR = resolve(RUST_DIR, '..');
-const LIB_DIR = join(RUST_DIR, 'lib');
+const ANDROID_PROJECT_DIR = join(REPO_DIR, 'android');
+const GRADLEW = join(ANDROID_PROJECT_DIR, 'gradlew');
 const TARGET_DIR = join(RUST_DIR, 'target');
 const JNI_PATH = join(REPO_DIR, 'android', 'app', 'src', 'main', 'jniLibs');
+const UNIFFI_PATH = join(
+  REPO_DIR,
+  'android',
+  'app',
+  'build',
+  'generated',
+  'source',
+  'uniffi',
+);
 const NDK_VERSION = '28.2.13676358';
 const CARGO_NDK_VERSION = '4.0.1';
 
@@ -46,15 +65,22 @@ const ALL_ABIS = Object.keys(ABI_TABLE);
 
 // --- Args ---
 const args = process.argv.slice(2);
+const REGTEST_QA_APK_FLAG = '--regtest-qa-apk';
+const buildRegtestQaApk = args.includes(REGTEST_QA_APK_FLAG);
+const abiArgs = args.filter(arg => arg !== REGTEST_QA_APK_FLAG);
 let abis;
-if (args.length === 0) {
+if (abiArgs.length === 0) {
   abis = ALL_ABIS;
-} else if (args.length === 1 && ALL_ABIS.includes(args[0])) {
-  abis = [args[0]];
+} else if (abiArgs.length === 1 && ALL_ABIS.includes(abiArgs[0])) {
+  abis = [abiArgs[0]];
 } else {
   console.error(
-    `ERROR: invalid args. Usage: build_android_local.mjs [${ALL_ABIS.join('|')}]`,
+    `ERROR: invalid args. Usage: build_android_local.mjs [${ALL_ABIS.join('|')}] [${REGTEST_QA_APK_FLAG}]`,
   );
+  process.exit(1);
+}
+if (buildRegtestQaApk && (abis.length !== 1 || abis[0] !== 'arm64')) {
+  console.error(`ERROR: ${REGTEST_QA_APK_FLAG} requires the arm64 ABI.`);
   process.exit(1);
 }
 
@@ -139,8 +165,8 @@ if (!capture('cargo', ['ndk', '--version'])) {
 if (!capture('bindgen', ['--version'])) {
   missing.push('bindgen-cli: cargo install --force --locked bindgen-cli');
 }
-// lightwallet-protocol's `rebuild-proto` feature (enabled by both zingolib and
-// nym-proxy-ffi) runs tonic-prost-build, which shells out to protoc from PATH.
+// lightwallet-protocol's `rebuild-proto` feature runs tonic-prost-build,
+// which shells out to protoc from PATH.
 if (!capture('protoc', ['--version'])) {
   missing.push(
     'protoc: apt install protobuf-compiler (Linux), brew install protobuf (macOS), winget install Google.Protobuf (Windows)',
@@ -181,7 +207,27 @@ const env = {
   CXXFLAGS_aarch64_linux_android: '-mno-outline-atomics',
 };
 
-process.chdir(LIB_DIR);
+if (buildRegtestQaApk) {
+  console.log('\n=== Cleaning the Android Local Regtest QA app ===');
+  run(GRADLEW, [':app:clean', '-PwcashRegtestQaArm64Only=true'], {
+    env,
+    cwd: ANDROID_PROJECT_DIR,
+  });
+}
+
+process.chdir(RUST_DIR);
+
+for (const { jniDir } of Object.values(ABI_TABLE)) {
+  rmSync(join(JNI_PATH, jniDir, 'libzingo_nym_proxy_ffi.so'), {
+    force: true,
+  });
+}
+for (const variant of ['debug', 'release']) {
+  rmSync(join(UNIFFI_PATH, variant, 'java', 'uniffi', 'zingo_nym_proxy_ffi'), {
+    recursive: true,
+    force: true,
+  });
+}
 
 // --- Build per ABI ---
 const exe = process.platform === 'win32' ? '.exe' : '';
@@ -193,7 +239,16 @@ for (const abi of abis) {
 
   run(
     'cargo',
-    ['ndk', '--target', triple, 'build', '--release', '--package', 'wcash-mobile-ffi'],
+    [
+      'ndk',
+      '--target',
+      triple,
+      'build',
+      '--locked',
+      '--release',
+      '--package',
+      'wcash-mobile-ffi',
+    ],
     {
       env: abiEnv,
     },
@@ -216,65 +271,30 @@ for (const abi of abis) {
   copyFileSync(soPath, join(dstDir, 'libuniffi_zingo.so'));
 }
 
-console.log('\n=== Building Nym proxy shim (nym-proxy-ffi) ===');
-const NYM_BUNDLE = join(RUST_DIR, 'nym-proxy-ffi', 'target', 'android-shim');
-const SHIM_SO = 'libzingo_nym_proxy_ffi.so';
-const shimAbiFlags = abis.flatMap(abi => ['--abi', ABI_TABLE[abi].jniDir]);
-
-run(
-  'cargo',
-  [
-    'run',
-    '-p',
-    'workbench',
-    '--bin',
-    'bundle-android-shim',
-    '--',
-    ...shimAbiFlags,
-  ],
-  { env, cwd: RUST_DIR },
-);
-run(
-  'cargo',
-  [
-    'run',
-    '-p',
-    'workbench',
-    '--bin',
-    'consume-android-shim',
-    '--',
-    '--bundle',
-    NYM_BUNDLE,
-  ],
-  { env, cwd: RUST_DIR },
-);
-
-// --- Kotlin bindings: the wallet from the UDL, the shim from the unstripped
-// bundle library ---
+// Generate only the reviewed Wcash wallet binding.
 run(
   process.execPath,
   [
     join(REPO_DIR, 'scripts', 'generate_kotlin_bindings.mjs'),
     '--variants',
     'debug,release',
-    '--shim-library',
-    join(NYM_BUNDLE, 'jniLibs', ABI_TABLE[abis[0]].jniDir, SHIM_SO),
   ],
   { env, cwd: REPO_DIR },
 );
 
-// Strip the staged shim .so, matching the wallet .so treatment above.
-for (const abi of abis) {
-  const staged = join(JNI_PATH, ABI_TABLE[abi].jniDir, SHIM_SO);
-  run(join(NDK_TOOLCHAIN, `llvm-strip${exe}`), ['--strip-all', staged], {
-    env,
-  });
-  run(
-    join(NDK_TOOLCHAIN, `llvm-objcopy${exe}`),
-    ['--remove-section', '.comment', staged],
-    { env },
+if (buildRegtestQaApk) {
+  console.log(
+    '\n=== Testing and assembling the ARM64 Local Regtest QA APK ===',
   );
-  console.log(`sha256  ${sha256File(staged)}  ${staged}`);
+  run(
+    GRADLEW,
+    [
+      ':app:testProdDebugUnitTest',
+      ':app:assembleProdDebug',
+      '-PwcashRegtestQaArm64Only=true',
+    ],
+    { env, cwd: ANDROID_PROJECT_DIR },
+  );
 }
 
-console.log(`\nDone. ABIs built: ${abis.join(', ')} (wallet + nym-proxy-ffi)`);
+console.log(`\nDone. Wcash wallet ABIs built: ${abis.join(', ')}`);

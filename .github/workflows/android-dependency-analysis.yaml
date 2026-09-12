@@ -10,6 +10,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 jobs:
   android-dependency-analysis:
     name: Andr dependency analysis

@@ -4,7 +4,7 @@
 // Cross-platform: Linux, macOS, Windows (requires Docker Desktop running).
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -13,13 +13,21 @@ const RUST_DIR = resolve(ANDROID_DIR, '..');
 const REPO_DIR = resolve(RUST_DIR, '..');
 const IMAGE_TAG = 'localhost/devlocal/build_android';
 const JNI_PATH = join(REPO_DIR, 'android', 'app', 'src', 'main', 'jniLibs');
-const UNIFFI_PATH = join(REPO_DIR, 'android', 'app', 'build', 'generated', 'source', 'uniffi');
+const UNIFFI_PATH = join(
+  REPO_DIR,
+  'android',
+  'app',
+  'build',
+  'generated',
+  'source',
+  'uniffi',
+);
 
 const ABIS = [
-  { triple: 'x86_64-linux-android',    jniDir: 'x86_64' },
-  { triple: 'i686-linux-android',      jniDir: 'x86' },
+  { triple: 'x86_64-linux-android', jniDir: 'x86_64' },
+  { triple: 'i686-linux-android', jniDir: 'x86' },
   { triple: 'armv7-linux-androideabi', jniDir: 'armeabi-v7a' },
-  { triple: 'aarch64-linux-android',   jniDir: 'arm64-v8a' },
+  { triple: 'aarch64-linux-android', jniDir: 'arm64-v8a' },
 ];
 
 function run(cmd, args) {
@@ -37,7 +45,9 @@ function capture(cmd, args) {
 }
 
 if (!capture('docker', ['--version'])) {
-  console.error('ERROR: docker not found. Install Docker Desktop and ensure the daemon is running.');
+  console.error(
+    'ERROR: docker not found. Install Docker Desktop and ensure the daemon is running.',
+  );
   process.exit(1);
 }
 
@@ -45,16 +55,29 @@ process.chdir(RUST_DIR);
 
 // The docker build context is rust/ and has no .git, so describe here.
 const gitDescribe =
-  capture('git', ['-C', REPO_DIR, 'describe', '--dirty', '--always', '--long', '--match', 'zingo-*']) ?? '';
+  capture('git', [
+    '-C',
+    REPO_DIR,
+    'describe',
+    '--dirty',
+    '--always',
+    '--long',
+    '--match',
+    'zingo-*',
+  ]) ?? '';
 
 console.log('=== Building Docker image ===');
 run('docker', [
   'build',
-  '--target', 'build_android',
-  '--build-arg', `ZINGO_MOBILE_GIT_DESCRIBE=${gitDescribe}`,
-  '--tag', IMAGE_TAG,
+  '--target',
+  'build_android',
+  '--build-arg',
+  `ZINGO_MOBILE_GIT_DESCRIBE=${gitDescribe}`,
+  '--tag',
+  IMAGE_TAG,
   '.',
-  '-f', 'android/docker/Dockerfile',
+  '-f',
+  'android/docker/Dockerfile',
 ]);
 
 console.log('\n=== Creating temporary container ===');
@@ -67,9 +90,18 @@ if (!containerId) {
 try {
   for (const { jniDir } of ABIS) {
     mkdirSync(join(JNI_PATH, jniDir), { recursive: true });
+    rmSync(join(JNI_PATH, jniDir, 'libzingo_nym_proxy_ffi.so'), {
+      force: true,
+    });
   }
   for (const variant of ['debug', 'release']) {
-    mkdirSync(join(UNIFFI_PATH, variant, 'java', 'uniffi', 'zingo'), { recursive: true });
+    mkdirSync(join(UNIFFI_PATH, variant, 'java', 'uniffi', 'zingo'), {
+      recursive: true,
+    });
+    rmSync(
+      join(UNIFFI_PATH, variant, 'java', 'uniffi', 'zingo_nym_proxy_ffi'),
+      { recursive: true, force: true },
+    );
   }
 
   console.log('\n=== Extracting .so artifacts ===');
@@ -85,28 +117,8 @@ try {
   for (const variant of ['debug', 'release']) {
     run('docker', [
       'cp',
-      `${containerId}:/opt/zingo/rust/lib/src/uniffi/zingo/zingo.kt`,
+      `${containerId}:/opt/zingo/rust/generated-kotlin/zingo/zingo.kt`,
       join(UNIFFI_PATH, variant, 'java', 'uniffi', 'zingo', 'zingo.kt'),
-    ]);
-  }
-
-  console.log('\n=== Extracting Nym shim .so artifacts ===');
-  for (const { triple, jniDir } of ABIS) {
-    run('docker', [
-      'cp',
-      `${containerId}:/opt/zingo/rust/nym-proxy-ffi/target/${triple}/release/libzingo_nym_proxy_ffi.so`,
-      join(JNI_PATH, jniDir, 'libzingo_nym_proxy_ffi.so'),
-    ]);
-  }
-
-  console.log('\n=== Extracting Nym shim Kotlin bindings ===');
-  for (const variant of ['debug', 'release']) {
-    const shimKtDir = join(UNIFFI_PATH, variant, 'java', 'uniffi', 'zingo_nym_proxy_ffi');
-    mkdirSync(shimKtDir, { recursive: true });
-    run('docker', [
-      'cp',
-      `${containerId}:/opt/zingo/rust/nym-proxy-ffi/generated-kotlin/uniffi/zingo_nym_proxy_ffi/zingo_nym_proxy_ffi.kt`,
-      join(shimKtDir, 'zingo_nym_proxy_ffi.kt'),
     ]);
   }
 } finally {
@@ -114,4 +126,4 @@ try {
   spawnSync('docker', ['rm', '-v', containerId], { stdio: 'inherit' });
 }
 
-console.log('\nDone. 4 ABIs built and exported.');
+console.log('\nDone. 4 Wcash wallet ABIs built and exported.');

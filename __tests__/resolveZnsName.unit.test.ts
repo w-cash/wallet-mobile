@@ -18,12 +18,9 @@ describe('Wcash name-service policy', () => {
     '  bob123.zcash  ',
     'alice',
     '',
-  ])(
-    'does not classify %s as an active Wcash alias',
-    text => {
-      expect(isZnsAlias(text)).toBe(false);
-    },
-  );
+  ])('does not classify %s as an active Wcash alias', text => {
+    expect(isZnsAlias(text)).toBe(false);
+  });
 
   it.each([
     ChainNameEnum.mainChainName,
