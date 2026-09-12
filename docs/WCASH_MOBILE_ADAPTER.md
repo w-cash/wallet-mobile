@@ -1,94 +1,70 @@
-# Wcash Mobile exact-fork adapter
+# Wcash Mobile exact Zingo fork
 
-## Invariants
+## Source invariants
 
-- UI baseline: Zingo Mobile `zingo-2.0.23-317` at `bc9b47e0b3ccdd2735e7d381f1c76d58a8628b80`.
-- Wcash core: `w-cash/wallet-core` at `58bc22ec63bbe3eddab5f961c137836431589c95`.
-- Wcash wallet backend: `w-cash/wolf` at `5b4e29980eb45e84ddab9024f530c923986d7e1e`.
-- Consensus patches: `w-cash/wolf` at `9a9c0668784117f116d5b69bdb3a090765092343`.
-- Product name: `Wcash Wallet`.
-- Production ticker copy: `WEC`; Testnet and Regtest runtime ticker: `TWC`.
+- Upstream UI baseline: Zingo Mobile `zingo-2.0.23-317`, commit `bc9b47e0b3ccdd2735e7d381f1c76d58a8628b80`.
+- Product label: `Wcash Wallet`.
 - Native identity: `com.wcashwallet.wallet`; beta: `com.wcashwallet.wallet.beta`.
-- Wcash Mainnet is unavailable. Only Testnet and feature-gated Regtest exist in the reviewed core.
+- Production ticker copy: `WEC`; Testnet and Regtest runtime ticker: `TWC`.
+- Wcash Mainnet is unavailable. The reviewed backend exposes Testnet and feature-gated Regtest only.
 
-The upstream React screens, component hierarchy, and navigation remain intact. `scripts/assert-upstream-ui-parity.mjs` pins every byte under `app`, `screens`, `ui`, and `assets`: 450 files must match upstream as one digest, and 24 reviewed branding/protocol files must match individual digests. Source copyright and license files remain in the repository; user-facing About attribution uses the required Wcash Wallet product name.
+The React screens, styles, component hierarchy, and navigation remain the upstream implementation. `scripts/assert-upstream-ui-parity.mjs` verifies 447 UI files as one byte-identical upstream digest and 27 individually reviewed exceptions for branding, protocol copy, and availability gates. ZingoLabs/Zingo copyright and MIT attribution remain accurate in every About translation. Internal Zingo module, target, type, and UniFFI names remain where source compatibility requires them.
 
-## First backend slice
+The upstream `rust/lib` implementation remains byte-identical. No Wcash native build or workflow packages it.
 
-`rust/wcash-mobile-adapter` is an additive crate. It calls `zingolib::wcash::{WcashTestnetRuntime, WcashRegtestRuntime}` and never calls the upstream Zcash `LightClient`.
+## Reproducibility gate
 
-`rust/wcash-mobile-ffi` is the native UniFFI boundary. It retains the upstream `uniffi.zingo` namespace and function names so the Kotlin, Swift, and React contracts stay stable, but it depends only on `wcash-mobile-adapter`. Android and iOS build scripts explicitly build this package. Both native bridges call its Wcash-only `set_wallet_directory` symbol during initialization, so accidentally packaging the upstream Zcash FFI becomes a build/link failure instead of a runtime fallback.
+The corrective adapter currently uses local Wolf commit `8f61c6a36e5eca756d93ba02ec5567fb03c8b312`, including staged transactions, retry-safe proposal cancellation, seed verification, and Android sandbox-aware path validation. That commit is not published. The remote wallet-core pin is still `58bc22ec63bbe3eddab5f961c137836431589c95`, with its transitive Wolf runtime replaced locally during validation so Cargo resolves exactly one `wcash-wallet` package.
 
-| Existing mobile contract | Adapter method | State |
-| --- | --- | --- |
-| `init_new` | `create_new` | Generates a 24-word BIP-39 phrase and creates a Wcash account against an attested endpoint. |
-| `init_from_seed` | `restore_from_seed` | Restores Testnet or Regtest from phrase and birthday. |
-| `init_from_bytes` | `open_wallet_bytes` | Verifies a bounded checksummed Wcash envelope, restores its SQLite database, and opens it on the exact network. |
-| `save_wallet_bytes` | `save_wallet_bytes` | Saves version, Wcash network, birthday, seed phrase, and SQLite bytes with SHA-256 integrity. The leading little-endian version remains compatible with the native plain-wallet probe. |
-| `read_wallet_recovery_info` | free function of the same name | Reads seed, birthday, and chain without opening SQLite or contacting a server. |
-| `validate_wallet_bytes` | free function of the same name | Rejects wrong magic, network, bounds, length, seed, checksum, and trailing bytes. |
-| `run_sync` / `pause_sync` / `poll_sync` | `prepare_sync`, `synchronize`, `pause_sync` | Uses the core's bounded cooperative cancellation and returns the existing completion JSON shape. |
-| `status_sync` | `sync_status_json` | Reports exact scanned/tip state. The core does not expose live within-batch output counts, so those fields remain zero and percentage is fail-closed at 0 until complete. |
-| `get_latest_block_wallet` | `latest_wallet_block_json` | Returns the highest fully scanned height. |
-| `get_latest_block_server` | `latest_server_height` | Tries only the two frozen Wcash network identities and returns a tip after the endpoint attests as Testnet or Regtest. A Zcash or otherwise mismatched endpoint fails closed. |
-| `info_server` | `server_info_json` | Returns the active Wcash network, branch ID, attested tip, endpoint, and launch activation heights in the existing UI shape. |
-| `get_balance` | `balance_json` | Maps Ironwood, transparent, and disabled legacy pools to the existing React shape. |
-| `get_spendable_balance_total` | `spendable_balance_json` | Sums immediately spendable Ironwood value. |
-| `get_unified_addresses` | `unified_addresses_json` | Returns the canonical Wcash Ironwood Unified Address in the existing list shape. |
-| `get_transparent_addresses` | `transparent_addresses_json` | Returns the deterministic Wcash transparent coinbase receiver. |
-| `parse_address` | `parse_address_json` | Accepts only canonical Wcash UAs on Testnet or Regtest with the mandatory Ironwood receiver; Zcash and cross-network addresses fail. The existing `orchard` receiver token is retained only as the unchanged React contract. |
-| `get_value_transfers` | `confirmed_history_json` | Maps bounded, newest-first confirmed Wcash history; unavailable recipient and memo details are omitted. |
-| `send` | `stage_send_json` | Validates exact-network recipients and records a side-effect-free preview; repeated form and confirmation-screen calls may replace an unsigned preview. It returns the ZIP 317 minimum fee and Ironwood pool JSON. |
-| `confirm` | `confirm_send_json` | Proves and signs only after confirmation. It broadcasts only when the signed fee exactly matches the reviewed preview, retains the exact signed bytes across a retry, and clears them only after successful broadcast. |
+This state is intentionally unreleasable. The pull-request and candidate workflows reject absolute Rust paths, require exactly one `wcash-wallet` lockfile entry, and reject the obsolete Wolf revision `5b4e29980eb45e84ddab9024f530c923986d7e1e`. Before review, replace the local direct dependency and patch with an immutable published wallet-core revision that pins the reviewed Wolf commit, regenerate `Cargo.lock`, and rerun every native gate.
 
-The current core has no pure proposal or fee-quote API. The adapter therefore uses the ZIP 317 minimum for the initial preview and leaves the wallet database unchanged while Zingo Mobile recalculates that preview. After the user confirms, the adapter signs once. If the actual signed fee differs, it fails closed and retains those exact signed bytes; the next unchanged preview exposes the exact fee, and a second confirmation broadcasts the same bytes. A core proposal API is still required to avoid that extra review cycle when the actual fee exceeds the minimum.
+## Wcash-only native boundary
 
-## Fail-closed boundary
+`rust/wcash-mobile-adapter` contains the Wcash runtime adapter. `rust/wcash-mobile-ffi` preserves the upstream `uniffi.zingo` contract while depending only on that adapter. Android and iOS build scripts and reusable workflows select `--package wcash-mobile-ffi`. Both platform bridges call the Wcash-only `set_wallet_directory` symbol during initialization, so an upstream Zcash library fails during packaging/linking instead of becoming a runtime fallback.
 
-The native Android and iOS wallet build paths select `wcash-mobile-ffi`; they no longer package the upstream `rust/lib` wallet implementation. Every UDL entry point exists in the Wcash implementation. Supported first-slice calls route to the adapter, deliberately neutral donation calls return an empty address, and every other call rejects with a typed error containing `unsupported Wcash feature`. The upstream `rust/lib/src/lib.rs` remains byte-identical to the audited tag and is retained only as the reference implementation.
+The implemented lifecycle is:
 
-The unchanged periodic data coordinator consumes the explicit memo-history capability error as an empty message projection so it does not recursively restart synchronization. The Messages screen and navigation remain present; no native method reports unsupported memo data as successful wallet history.
+| Existing mobile call | Wcash behavior |
+| --- | --- |
+| `init_new`, `init_from_seed` | Create or restore a 24-word Wcash Testnet/Regtest wallet against an attested endpoint. |
+| `init_from_bytes` | Validate checksum, network, SQLite structure, birthday, and phrase ownership in a private temporary database, then install with rollback of the main DB, WAL, and SHM on any failure. |
+| `save_wallet_bytes` | Checkpoint SQLite and export a bounded, checksummed envelope containing network, birthday, phrase, and database. |
+| `run_sync`, `poll_sync`, `status_sync` | Run cancellable Wcash sync and project a truthful `Scanned` range from birthday to the fully scanned height after completion so the unchanged Sync Report leaves its waiting state. |
+| balance/address/history calls | Return Ironwood, transparent coinbase, canonical Wcash UA, and confirmed/pending history in the upstream JSON shapes. |
+| `send` | Validate exact-network recipients and retain an exact staged proposal. Repeated identical previews return the same exact fee. Replacing a preview cancels only that proposal's locks. |
+| `shield` | Stage mature transparent coinbase shielding and return its exact value and fee through the existing confirmation flow. |
+| `confirm` | Reverify phrase ownership, calculate and durably store the exact consented transaction, then broadcast those exact bytes. |
 
-The shared core still lacks contracts needed for UFVK/watch-only wallets, offline creation, pure send proposals, detailed history recipients and memos, diversified address creation, live sync progress, extended server diagnostics, market price, message analytics, rescan, and the upstream migration/split/Nym features. Wcash Mainnet consensus identity is also not frozen. These surfaces must fail closed; they must never fall through to Zcash.
+Mobile metadata is stored in the wallet SQLite database before broadcast. It keeps outgoing sends and shields visible after immediate restart, including core pending rows created before mobile metadata existed. Once mined, metadata preserves the truthful `shield` classification and transparent-to-Ironwood pool projection even though the current core history reports that transaction as a fee-only outgoing transfer.
 
-The local shared-core commit `3719a2006c2a5924e725fad6e1ba4d9a8f6823fb` adds facade-level recipient validation and seedless balance/history reads, but it is not pushed and therefore is not a reproducible Cargo git revision yet. This mobile branch stays on the last remote immutable Wcash core (`58bc22ec...`). Once that core commit is integrated and pushed, mobile should repin and replace its equivalent wolf recipient call with `WcashTestnet::validate_recipient` / `WcashRegtest::validate_recipient`. A facade for wallet-less endpoint attestation is still needed before the adapter can remove its direct wolf dependency completely.
+If the node accepts a transaction and a later metadata/checkpoint operation fails, `confirm` still returns the accepted txid and keeps the in-memory conflict blocker. It never reports an ordinary send failure after network acceptance.
 
-No Wcash donation address or Wcash block explorer is approved. Donation creation, prompts, settings persistence, and automatic address-book insertion are disabled without changing their screen structure. Explorer URLs return empty. Support actions open the verified `https://github.com/w-cash/wallet-mobile/issues` target; no Wcash email address is invented. An approved Wcash support email remains a release blocker if email support is required for store release.
+The reviewed core cannot safely reconstruct a `CalculatedTransaction` after a crash between durable signing and broadcast because its stored signed record lacks the exact tip/anchor pair. Such a transaction remains visible as `calculated`, conflicting proposals remain locked, and mobile fails closed. A shared-core reconstruction/rebroadcast API is required before automated post-crash rebroadcast can be enabled; raw-byte broadcast is forbidden.
 
-The local build exposes only the reviewed `http://127.0.0.1:48234` Wcash Regtest endpoint. Upstream Zcash endpoints and registry lookup are absent. Add a public Wcash Testnet server only after its endpoint is approved and attests to the frozen Testnet identity.
+## Platform storage
 
-## Pull-request CI
+Android uses `context.noBackupFilesDir/wcash-wallet`, creates the leaf directory, and applies `OsConstants.S_IRWXU` before calling the native boundary. Wolf's Android-only validator trusts the SELinux app sandbox boundary while retaining immediate-parent mode, ownership, regular-file, symlink, hard-link, and inode checks. macOS/Linux ancestor traversal remains unchanged.
 
-`.github/workflows/wcash-pr-qa.yaml` is the Wcash fork's automatic pull-request gate. It uses only GitHub-hosted `ubuntu-24.04` and `macos-15` runners and has read-only repository permissions. It checks source parity and native identity, tests both Wcash Rust crates on the host, cross-compiles `wcash-mobile-ffi` for Android ARM64, cross-compiles it for the iOS ARM64 simulator, and generates/type-checks the matching Kotlin and Swift contracts. It contains no release, upload, signing, or deployment step.
+iOS stores SQLite in `Application Support/WcashWallet`. The directory and `wcash-wallet.sqlite`, WAL, and SHM receive class-C file protection and backup exclusion. Protection functions throw; initialization fails closed and save propagates any protection failure.
 
-The original `.github/workflows/ci.yaml` fan-out is manual-only in this fork. It hard-codes the upstream `*/zingo-mobile` checkout, private `zingo-android-*` / `zingo-ios-build-12` runner labels, and Zcash integration topology, so it cannot be a truthful Wcash PR gate without a broader migration. The new hosted workflow has not run on GitHub until this branch is pushed; a green local YAML/source assertion cannot substitute for its first hosted run.
+Android also retains `allowBackup=false`.
 
-## Verification
+## Visible unavailable features
 
-Run from the repository root:
+Ordinary UA receive, mining receive, sync, balance, history, send, and shielding remain available. The existing layout gates UFVK/watch-only import, Rescan, diversified-address creation, transaction removal, and Nym/mixnet because the reviewed Wcash backend does not implement their exact semantics. Their native entry points fail closed and never call the upstream Zcash FFI.
 
-```sh
-node scripts/assert-upstream-ui-parity.mjs
-yarn jest __tests__/WcashNativeIdentity.unit.test.ts --runInBand
-yarn typecheck
-```
+No Wcash donation address, block explorer, or support email is approved. Donation state is forced off while its existing layout remains; address helpers return no destination. Explorer actions are unavailable. Support opens `https://github.com/w-cash/wallet-mobile/issues` and never uses `support@zingolabs.org`.
 
-Run the Rust adapter from `rust` with the reviewed local toolchain:
+## Verification evidence
 
-```sh
-SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk \
-PROTOC=/Users/rustdev/Documents/Codex/2026-09-12/weh/work/toolchains/protoc-36.1-install/bin/protoc \
-cargo test -p wcash-mobile-adapter
-cargo test -p wcash-mobile-ffi
-cargo test -p wcash-mobile-adapter tests::local_regtest_endpoint_attests_and_reports_server_info -- --ignored --exact
-cargo test -p wcash-mobile-adapter tests::local_regtest_first_slice_create_sync_save_and_restore -- --ignored --exact
-cargo test -p wcash-mobile-ffi tests::local_regtest_native_boundary_runs_the_first_slice -- --ignored --exact
-# With WCASH_MOBILE_FUNDED_TEST_SEED and the documented local miner variables:
-cargo test -p wcash-mobile-ffi tests::local_regtest_funded_send_mine_sync_and_reopen_through_ffi -- --ignored --exact
-```
+Local source and host checks on 2026-09-12:
 
-The full native builds and emulator/device runs require full Xcode plus CocoaPods, or a JDK plus Android SDK/NDK and an emulator. Those toolchains are not present on this host. The host-side UniFFI library and live Regtest boundary are nevertheless executable with the reviewed Rust toolchain.
+- UI parity: 447 byte-identical upstream files plus 27 reviewed exceptions.
+- Jest: 89 suites, 621 tests, and 95 snapshots passed.
+- TypeScript, ESLint, Prettier, Rustfmt, and strict Clippy passed.
+- Rust host tests: 13 adapter tests and 3 FFI tests passed; network tests are separately ignored by default.
+- Live Regtest: endpoint attestation, create, restore, rejected-import preservation, sync, balance, receive, history, export, and reopen passed against `127.0.0.1:48234`.
+- Funded FFI: shield preview/confirm/broadcast/restart/mine/sync/history and send preview/confirm/broadcast/restart/mine/sync/history passed. Confirmation blocks were height 430 (`2f21a01c9f6e742bda229893117cd446bef6d80cae48074fd00bf1c929bb20b3`) and height 431 (`392df2b87dace89117b38afc30aab5d8849f89dc32d1da8e83d30d6c37143cb3`). The disposable phrase stayed in the process environment and was not logged or committed.
+- Android ARM64: native build, APK assembly, install, package clear, cold launch, Regtest wallet creation, and exact upstream Receive UI passed on the API 34 emulator. The pre-sync-status-fix APK SHA-256 was `028af2da99413903b2c441d2573756d8fc3eb88e4303f0fe56b1549f6ce2d769`; a native rebuild is required to include the completed Sync Report projection.
 
-The disposable funded test keeps its 24-word phrase only in the process environment. It creates a recipient through the mobile FFI, restores and synchronizes the funded sender through that same boundary, previews without changing wallet bytes, confirms and broadcasts, invokes the merged Regtest miner, synchronizes again, verifies the transaction is confirmed in history, then exports and reopens the wallet through FFI and verifies that history again. The phrase is never written to source, test output, miner arguments, or the repository.
-
-On this host, the parity guard passed with `450 + 24` files, all `89` Jest suites (`621` tests and `95` snapshots) passed, TypeScript, ESLint, Prettier, Rustfmt, and Clippy passed, and both Rust crates passed their ordinary tests. The two adapter integration tests, the fresh-wallet native-FFI integration test, and the complete funded send/broadcast/mine/sync/history/reopen FFI test all passed against the live local Wcash Regtest endpoint.
+Full Xcode is not available on this host, so the iOS Rust target and app archive still require the GitHub-hosted `macos-15` boundary job after immutable dependency pins are published. Publishing, signing, deployment, and store release remain disabled.

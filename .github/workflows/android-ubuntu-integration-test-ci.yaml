@@ -27,7 +27,6 @@ on:
         default: false
 
 env:
-  REPO-OWNER: ${{ github.repository_owner }}
   ABI: ${{ inputs.abi }}
   API-LEVEL: ${{ inputs.api-level }}
   TARGET: ${{ inputs.target }}
@@ -40,14 +39,8 @@ jobs:
     env:
       CACHE-KEY: ${{ inputs.cache-key }}
     steps:
-      - name: Set envs for zingolib CI
-        if: ${{ contains(github.repository, 'zingolib') }}
-        run: echo "REPO-OWNER=zingolabs" >> $GITHUB_ENV
-
       - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          repository: ${{ env.REPO-OWNER }}/zingo-mobile
 
       - name: Set envs for x86_64
         if: ${{ env.ABI == 'x86_64' }}
@@ -167,14 +160,8 @@ jobs:
       RUSTFLAGS: -D warnings
       CACHE-KEY: ${{ inputs.cache-key }}
     steps:
-      - name: Set envs for zingolib CI
-        if: ${{ contains(github.repository, 'zingolib') }}
-        run: echo "REPO-OWNER=zingolabs" >> $GITHUB_ENV
-
       - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          repository: ${{ env.REPO-OWNER }}/zingo-mobile
 
       - name: Set envs for x86_64
         if: ${{ env.ABI == 'x86_64' }}

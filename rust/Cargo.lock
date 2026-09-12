@@ -5011,7 +5011,6 @@ dependencies = [
 [[package]]
 name = "wcash-genesis"
 version = "0.1.0"
-source = "git+https://github.com/w-cash/wolf.git?rev=5b4e29980eb45e84ddab9024f530c923986d7e1e#5b4e29980eb45e84ddab9024f530c923986d7e1e"
 dependencies = [
  "blake2b_simd",
  "sha2 0.10.9",
@@ -5022,6 +5021,7 @@ name = "wcash-mobile-adapter"
 version = "0.1.0"
 dependencies = [
  "bip0039",
+ "rusqlite",
  "secrecy",
  "serde",
  "serde_json",
@@ -5050,7 +5050,6 @@ dependencies = [
 [[package]]
 name = "wcash-wallet"
 version = "0.1.0"
-source = "git+https://github.com/w-cash/wolf.git?rev=5b4e29980eb45e84ddab9024f530c923986d7e1e#5b4e29980eb45e84ddab9024f530c923986d7e1e"
 dependencies = [
  "async-trait",
  "blake2b_simd",
@@ -5737,7 +5736,6 @@ dependencies = [
 [[package]]
 name = "zebra-chain"
 version = "12.0.0"
-source = "git+https://github.com/w-cash/wolf.git?rev=5b4e29980eb45e84ddab9024f530c923986d7e1e#5b4e29980eb45e84ddab9024f530c923986d7e1e"
 dependencies = [
  "bech32",
  "bitflags",

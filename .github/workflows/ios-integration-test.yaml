@@ -16,7 +16,6 @@ on:
 
 env:
   CACHE-KEY: ${{ inputs.cache-key }}
-  REPO-OWNER: ${{ github.repository_owner }}
 
 jobs:
   build-for-testing:
@@ -36,14 +35,8 @@ jobs:
         run: |
           xcodebuild -runFirstLaunch || true
 
-      - name: Set envs for zingolib CI
-        if: ${{ contains(github.repository, 'zingolib') }}
-        run: echo "REPO-OWNER=zingolabs" >> $GITHUB_ENV
-
       - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          repository: ${{ env.REPO-OWNER }}/zingo-mobile
 
       - name: Restore iOS xcframework cache
         uses: actions/cache/restore@v6
@@ -53,7 +46,7 @@ jobs:
             ios/zingo.swift
             ios/ZingoNymProxyFFI.xcframework
             ios/zingo_nym_proxy_ffi.swift
-          key: native-ios-xcframework-${{ env.CACHE-KEY }}
+          key: wcash-ios-xcframework-${{ env.CACHE-KEY }}
           fail-on-cache-miss: true
 
       - name: Setup Node.js
@@ -160,14 +153,8 @@ jobs:
   #         xcrun simctl list runtimes
   #         xcrun simctl list devices
 
-  #     - name: Set envs for zingolib CI
-  #       if: ${{ contains(github.repository, 'zingolib') }}
-  #       run: echo "REPO-OWNER=zingolabs" >> $GITHUB_ENV
-
   #     - name: Checkout repository
   #       uses: actions/checkout@v7
-  #       with:
-  #         repository: ${{ env.REPO-OWNER }}/zingo-mobile
 
   #     - name: Install docker
   #       run: |

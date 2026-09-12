@@ -127,15 +127,23 @@ enum WalletFileFormat {
 @objc(RPCModule)
 class RPCModule: NSObject {
 
+  static let walletDatabaseDirectoryName = "WcashWallet"
+  static let walletDatabaseFiles = [
+    "wcash-wallet.sqlite",
+    "wcash-wallet.sqlite-wal",
+    "wcash-wallet.sqlite-shm",
+  ]
+
   override init() {
     super.init()
     do {
       // This symbol exists only in the Wcash UniFFI crate. Besides choosing
       // the SQLite directory, it makes a mismatched upstream Zcash library a
       // native link failure instead of a runtime fallback.
-      _ = try setWalletDirectory(directory: getDocumentsDirectory())
+      _ = try setWalletDirectory(directory: try prepareWalletDatabaseDirectory())
+      try protectWalletDatabaseFiles()
     } catch {
-      assertionFailure("Wcash adapter selection failed: \(error)")
+      fatalError("Wcash private database boundary failed: \(error)")
     }
   }
   
@@ -158,6 +166,54 @@ class RPCModule: NSObject {
       throw FileError.documentsDirectoryNotFoundError("Error: [Native] Documents directory could not be located.")
     }
     return pathsFirst
+  }
+
+  /// Keeps the live SQLite database outside Documents and outside device
+  /// backups. Class C protection permits background sync after first unlock.
+  func prepareWalletDatabaseDirectory() throws -> String {
+    let fm = FileManager.default
+    let applicationSupport = try fm.url(
+      for: .applicationSupportDirectory,
+      in: .userDomainMask,
+      appropriateFor: nil,
+      create: true
+    )
+    var directory = applicationSupport.appendingPathComponent(
+      RPCModule.walletDatabaseDirectoryName,
+      isDirectory: true
+    )
+    try fm.createDirectory(
+      at: directory,
+      withIntermediateDirectories: true,
+      attributes: [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication]
+    )
+    var resourceValues = URLResourceValues()
+    resourceValues.isExcludedFromBackup = true
+    try directory.setResourceValues(resourceValues)
+    try fm.setAttributes(
+      [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+      ofItemAtPath: directory.path
+    )
+    return directory.path
+  }
+
+  /// Applies explicit protection to SQLite and both possible sidecars whenever
+  /// they exist; the containing directory carries the same policy before the
+  /// first file is created.
+  func protectWalletDatabaseFiles() throws {
+    let directory = try prepareWalletDatabaseDirectory()
+    let fm = FileManager.default
+    for name in RPCModule.walletDatabaseFiles {
+      var url = URL(fileURLWithPath: directory).appendingPathComponent(name)
+      guard fm.fileExists(atPath: url.path) else { continue }
+      var resourceValues = URLResourceValues()
+      resourceValues.isExcludedFromBackup = true
+      try url.setResourceValues(resourceValues)
+      try fm.setAttributes(
+        [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+        ofItemAtPath: url.path
+      )
+    }
   }
   
   // Set by delete and restore, cleared by the next successful wallet
@@ -200,17 +256,81 @@ class RPCModule: NSObject {
   // seconds after screen lock and broke background saves. Backup
   // exclusion is the guard against restoring a stale wallet over a
   // newer one and must never regress.
-  func writeFile(_ fileName: String, walletBytes: Data) throws {
-    let filePath = try getFileName(fileName)
-    try walletBytes.write(to: URL(fileURLWithPath: filePath), options: .atomic)
-    var fileURL = URL(fileURLWithPath: filePath)
+  func protectWalletFile(at fileURL: URL) throws {
+    var fileURL = fileURL
     var resourceValues = URLResourceValues()
     resourceValues.isExcludedFromBackup = true
-    try? fileURL.setResourceValues(resourceValues)
-    try? FileManager.default.setAttributes(
+    try fileURL.setResourceValues(resourceValues)
+    try FileManager.default.setAttributes(
       [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
-      ofItemAtPath: filePath
+      ofItemAtPath: fileURL.path
     )
+  }
+
+  func verifyWalletFileProtection(at fileURL: URL) throws {
+    let values = try fileURL.resourceValues(forKeys: [.isExcludedFromBackupKey])
+    guard values.isExcludedFromBackup == true else {
+      throw NSError(
+        domain: "WcashWalletProtection",
+        code: 1,
+        userInfo: [NSLocalizedDescriptionKey: "wallet backup exclusion was not retained"]
+      )
+    }
+    #if !targetEnvironment(simulator)
+    let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
+    let protection = attributes[.protectionKey] as? FileProtectionType
+    guard protection == .completeUntilFirstUserAuthentication else {
+      throw NSError(
+        domain: "WcashWalletProtection",
+        code: 2,
+        userInfo: [NSLocalizedDescriptionKey: "wallet file protection was not retained"]
+      )
+    }
+    #endif
+  }
+
+  func writeFile(_ fileName: String, walletBytes: Data) throws {
+    let destination = URL(fileURLWithPath: try getFileName(fileName))
+    let temporary = destination
+      .deletingLastPathComponent()
+      .appendingPathComponent(".wcash-protected-write-\(UUID().uuidString)")
+    let rollbackName = ".wcash-protected-old-\(UUID().uuidString)"
+    let rollback = destination.deletingLastPathComponent().appendingPathComponent(rollbackName)
+    let fm = FileManager.default
+    var replacementInstalled = false
+    do {
+      try walletBytes.write(to: temporary, options: .atomic)
+      // The recovery phrase is already present in this file. Apply both
+      // privacy attributes before the inode can become the public filename.
+      try protectWalletFile(at: temporary)
+      if fm.fileExists(atPath: destination.path) {
+        _ = try fm.replaceItemAt(
+          destination,
+          withItemAt: temporary,
+          backupItemName: rollbackName,
+          options: [.usingNewMetadataOnly]
+        )
+        replacementInstalled = true
+      } else {
+        try fm.moveItem(at: temporary, to: destination)
+        replacementInstalled = true
+      }
+      try verifyWalletFileProtection(at: destination)
+      if fm.fileExists(atPath: rollback.path) {
+        try fm.removeItem(at: rollback)
+      }
+    } catch {
+      // Never leave a newly written seed-bearing file at an unprotected
+      // temporary path when an attribute or atomic-install step fails.
+      try? fm.removeItem(at: temporary)
+      if fm.fileExists(atPath: rollback.path) {
+        try? fm.removeItem(at: destination)
+        try? fm.moveItem(at: rollback, to: destination)
+      } else if replacementInstalled {
+        try? fm.removeItem(at: destination)
+      }
+      throw error
+    }
   }
 
   func deleteFile(_ fileName: String) throws {
@@ -224,14 +344,11 @@ class RPCModule: NSObject {
     let fm = FileManager.default
     for name in [Constants.WalletFileName.rawValue, Constants.WalletBackupFileName.rawValue] {
       guard let path = try? getFileName(name), fm.fileExists(atPath: path) else { continue }
-      var fileURL = URL(fileURLWithPath: path)
-      var resourceValues = URLResourceValues()
-      resourceValues.isExcludedFromBackup = true
-      try? fileURL.setResourceValues(resourceValues)
-      try? fm.setAttributes(
-        [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
-        ofItemAtPath: path
-      )
+      do {
+        try protectWalletFile(at: URL(fileURLWithPath: path))
+      } catch {
+        NSLog("Error: [Native] wallet file protection repair failed for \(name): \(error.localizedDescription)")
+      }
     }
   }
 
@@ -480,6 +597,7 @@ class RPCModule: NSObject {
     let walletBytes: Data?
     do {
       walletBytes = try saveWalletBytes()
+      try protectWalletDatabaseFiles()
     } catch {
       // Logged here, rethrown unwrapped: the FFI's typed error must reach
       // the bridge intact so it rejects under its own variant name, not

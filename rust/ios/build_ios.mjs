@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Build the iOS Zingolib XCFramework: contains both the device slice (arm64) and
+// Build the iOS Wcash Wallet XCFramework: contains both the device slice (arm64) and
 // the simulator slice (arm64 + x86_64 fat). Xcode auto-selects the right slice
 // per build destination, so there is no separate "for device" vs "for simulator"
 // build anymore.
@@ -11,7 +11,14 @@
 // macOS only.
 
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  mkdirSync,
+  rmSync,
+  existsSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,7 +29,6 @@ if (process.platform !== 'darwin') {
 
 const IOS_DIR = dirname(fileURLToPath(import.meta.url));
 const RUST_DIR = resolve(IOS_DIR, '..');
-const LIB_DIR = join(RUST_DIR, 'lib');
 const WCASH_FFI_DIR = join(RUST_DIR, 'wcash-mobile-ffi');
 const TARGET_DIR = join(RUST_DIR, 'target');
 const REPO_IOS_DIR = resolve(RUST_DIR, '..', 'ios');
@@ -64,20 +70,42 @@ if (!capture('bindgen', ['--version'])) {
   run('cargo', ['install', '--force', '--locked', 'bindgen-cli'], { env });
 }
 
-// 1. Generate uniffi Swift bindings (also produces the C header + modulemap)
-process.chdir(LIB_DIR);
-run('cargo', [
-  'run', '--release', '--package', 'zingo-uniffi-bindgen',
-  '--bin', 'zingo-wallet-uniffi-bindgen', '--',
-  'generate', '../wcash-mobile-ffi/src/zingo.udl', '--language', 'swift', '--out-dir', './Generated',
-], { env });
+// 1. Generate UniFFI Swift bindings from the Wcash-only UDL (also produces the
+//    C header + modulemap). Generated output never touches upstream rust/lib.
+const generated = join(WCASH_FFI_DIR, 'Generated');
+rmSync(generated, { recursive: true, force: true });
+mkdirSync(generated, { recursive: true });
+process.chdir(RUST_DIR);
+run(
+  'cargo',
+  [
+    'run',
+    '--release',
+    '--package',
+    'zingo-uniffi-bindgen',
+    '--bin',
+    'zingo-wallet-uniffi-bindgen',
+    '--',
+    'generate',
+    'wcash-mobile-ffi/src/zingo.udl',
+    '--language',
+    'swift',
+    '--out-dir',
+    generated,
+  ],
+  { env },
+);
 
 // 2. Build cargo for the 3 targets
 for (const target of [DEVICE_TARGET, ...SIM_TARGETS]) {
-  run('cargo', ['build', '--release', '--target', target, '--package', 'wcash-mobile-ffi'], {
-    env,
-    cwd: WCASH_FFI_DIR,
-  });
+  run(
+    'cargo',
+    ['build', '--release', '--target', target, '--package', 'wcash-mobile-ffi'],
+    {
+      env,
+      cwd: WCASH_FFI_DIR,
+    },
+  );
 }
 
 // 3. Lipo the 2 simulator targets into one fat .a
@@ -86,7 +114,8 @@ run('lipo', [
   '-create',
   join(TARGET_DIR, 'aarch64-apple-ios-sim', 'release', 'libzingo.a'),
   join(TARGET_DIR, 'x86_64-apple-ios', 'release', 'libzingo.a'),
-  '-output', SIM_FAT_LIB,
+  '-output',
+  SIM_FAT_LIB,
 ]);
 
 // 4. Build the Nym proxy shim (nym-proxy-ffi) libraries + Swift bindings. The shim
@@ -105,22 +134,43 @@ const NYM_SIM_FAT_LIB = join(NYM_SIM_FAT_DIR, SHIM_LIB);
 const NYM_XCFRAMEWORK_OUT = join(REPO_IOS_DIR, 'ZingoNymProxyFFI.xcframework');
 
 for (const target of [DEVICE_TARGET, ...SIM_TARGETS]) {
-  run('cargo', ['build', '--release', '--target', target, '-p', 'zingo-nym-proxy-ffi'], { env, cwd: NYM_DIR });
+  run(
+    'cargo',
+    ['build', '--release', '--target', target, '-p', 'zingo-nym-proxy-ffi'],
+    { env, cwd: NYM_DIR },
+  );
 }
 
 rmSync(NYM_GENERATED, { recursive: true, force: true });
 mkdirSync(NYM_GENERATED, { recursive: true });
-run('cargo', [
-  'run', '--release', '-p', 'zingo-uniffi-bindgen', '--bin', 'zingo-uniffi-bindgen', '--',
-  'generate', '--library', NYM_DEVICE_LIB, '--language', 'swift', '--out-dir', NYM_GENERATED,
-], { env, cwd: RUST_DIR });
+run(
+  'cargo',
+  [
+    'run',
+    '--release',
+    '-p',
+    'zingo-uniffi-bindgen',
+    '--bin',
+    'zingo-uniffi-bindgen',
+    '--',
+    'generate',
+    '--library',
+    NYM_DEVICE_LIB,
+    '--language',
+    'swift',
+    '--out-dir',
+    NYM_GENERATED,
+  ],
+  { env, cwd: RUST_DIR },
+);
 
 mkdirSync(NYM_SIM_FAT_DIR, { recursive: true });
 run('lipo', [
   '-create',
   join(NYM_TARGET_DIR, 'aarch64-apple-ios-sim', 'release', SHIM_LIB),
   join(NYM_TARGET_DIR, 'x86_64-apple-ios', 'release', SHIM_LIB),
-  '-output', NYM_SIM_FAT_LIB,
+  '-output',
+  NYM_SIM_FAT_LIB,
 ]);
 
 // 5. Headers for the wallet xcframework: both FFI headers plus ONE module map
@@ -130,11 +180,17 @@ run('lipo', [
 //    its own xcframework ships libraries only (step 7).
 rmSync(XCF_HEADERS_DIR, { recursive: true, force: true });
 mkdirSync(XCF_HEADERS_DIR, { recursive: true });
-const generated = join(LIB_DIR, 'Generated');
-copyFileSync(join(generated, 'zingoFFI.h'),                   join(XCF_HEADERS_DIR, 'zingoFFI.h'));
-copyFileSync(join(NYM_GENERATED, 'zingo_nym_proxy_ffiFFI.h'), join(XCF_HEADERS_DIR, 'zingo_nym_proxy_ffiFFI.h'));
+copyFileSync(
+  join(generated, 'zingoFFI.h'),
+  join(XCF_HEADERS_DIR, 'zingoFFI.h'),
+);
+copyFileSync(
+  join(NYM_GENERATED, 'zingo_nym_proxy_ffiFFI.h'),
+  join(XCF_HEADERS_DIR, 'zingo_nym_proxy_ffiFFI.h'),
+);
 const combinedModulemap =
-  readFileSync(join(generated, 'zingoFFI.modulemap'), 'utf8') + '\n' +
+  readFileSync(join(generated, 'zingoFFI.modulemap'), 'utf8') +
+  '\n' +
   readFileSync(join(NYM_GENERATED, 'zingo_nym_proxy_ffiFFI.modulemap'), 'utf8');
 writeFileSync(join(XCF_HEADERS_DIR, 'module.modulemap'), combinedModulemap);
 
@@ -144,9 +200,16 @@ if (existsSync(XCFRAMEWORK_OUT)) {
 }
 run('xcodebuild', [
   '-create-xcframework',
-  '-library', DEVICE_LIB,  '-headers', XCF_HEADERS_DIR,
-  '-library', SIM_FAT_LIB, '-headers', XCF_HEADERS_DIR,
-  '-output', XCFRAMEWORK_OUT,
+  '-library',
+  DEVICE_LIB,
+  '-headers',
+  XCF_HEADERS_DIR,
+  '-library',
+  SIM_FAT_LIB,
+  '-headers',
+  XCF_HEADERS_DIR,
+  '-output',
+  XCFRAMEWORK_OUT,
 ]);
 
 // 7. Shim xcframework: libraries only. Its headers/module live in the wallet
@@ -156,13 +219,21 @@ if (existsSync(NYM_XCFRAMEWORK_OUT)) {
 }
 run('xcodebuild', [
   '-create-xcframework',
-  '-library', NYM_DEVICE_LIB,
-  '-library', NYM_SIM_FAT_LIB,
-  '-output', NYM_XCFRAMEWORK_OUT,
+  '-library',
+  NYM_DEVICE_LIB,
+  '-library',
+  NYM_SIM_FAT_LIB,
+  '-output',
+  NYM_XCFRAMEWORK_OUT,
 ]);
 
 // 8. Copy both Swift bindings to the app (compiled as normal Swift sources).
-copyFileSync(join(generated, 'zingo.swift'),                   join(REPO_IOS_DIR, 'zingo.swift'));
-copyFileSync(join(NYM_GENERATED, 'zingo_nym_proxy_ffi.swift'), join(REPO_IOS_DIR, 'zingo_nym_proxy_ffi.swift'));
+copyFileSync(join(generated, 'zingo.swift'), join(REPO_IOS_DIR, 'zingo.swift'));
+copyFileSync(
+  join(NYM_GENERATED, 'zingo_nym_proxy_ffi.swift'),
+  join(REPO_IOS_DIR, 'zingo_nym_proxy_ffi.swift'),
+);
 
-console.log(`\nDone. XCFrameworks at ${XCFRAMEWORK_OUT} + ${NYM_XCFRAMEWORK_OUT}`);
+console.log(
+  `\nDone. XCFrameworks at ${XCFRAMEWORK_OUT} + ${NYM_XCFRAMEWORK_OUT}`,
+);

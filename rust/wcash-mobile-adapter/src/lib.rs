@@ -11,20 +11,27 @@ use std::{
 };
 
 use bip0039::{Count, English, Mnemonic};
+use rusqlite::{Connection, params};
 use secrecy::{ExposeSecret, SecretString, SecretVec};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 use wcash_wallet::{
-    AttestedWcashClient, MAX_CONFIRMED_TRANSACTION_HISTORY_SIZE, WalletNetwork, decode_recipient,
+    AttestedWcashClient, COINBASE_SHIELDING_MATURITY, CalculatedTransaction,
+    ConfirmedTransactionSummary, ConfirmedTransactionSummaryHistory, MAX_COINBASE_SHIELDING_INPUTS,
+    MAX_CONFIRMED_TRANSACTION_HISTORY_SIZE, MAX_PENDING_TRANSACTION_PAGE_SIZE,
+    StagedTransactionProposal, TransferRecipient, WalletNetwork,
+    active_pending_signed_transactions, broadcast_calculated_transaction,
+    calculate_staged_transaction, cancel_staged_transaction, confirmed_transaction_summary_history,
+    decode_recipient, inspect_wallet, propose_coinbase_shielding_offline, propose_transfer_offline,
+    verify_wallet_seed,
 };
 pub use zingolib::wcash::WalletSyncCancellation;
 #[cfg(feature = "regtest")]
 use zingolib::wcash::WcashRegtestRuntime;
 use zingolib::wcash::{
-    ConfirmedTransaction, ConfirmedTransactionDirection, ConfirmedTransactionHistory,
-    ConfirmedTransactionKind, InitializedWallet, SignedTransaction, WalletBalanceSummary,
-    WalletInfo, WcashTestnetPayment, WcashTestnetRuntime,
+    ConfirmedTransactionDirection, ConfirmedTransactionKind, InitializedWallet,
+    WalletBalanceSummary, WalletInfo, WcashTestnetRuntime,
 };
 
 const WALLET_FILE_VERSION: u64 = 700;
@@ -33,7 +40,10 @@ const WALLET_FILE_HEADER_LEN: usize = 8 + 8 + 1 + 4 + 4 + 8 + 32;
 const MAX_SEED_PHRASE_BYTES: usize = 512;
 const MAX_WALLET_DATABASE_BYTES: usize = 512 * 1024 * 1024;
 const MAX_HISTORY_ROWS: usize = MAX_CONFIRMED_TRANSACTION_HISTORY_SIZE;
-const MINIMUM_PREVIEW_FEE_ZAT: u64 = 10_000;
+const TRANSACTION_EXPIRY_DELTA: u32 = 40;
+const TRANSACTION_LOCK_BLOCKS: u32 = 40;
+const LOCAL_REGTEST_CONFIRMATIONS: u32 = 1;
+const MOBILE_PENDING_TABLE: &str = "wcash_mobile_pending_transactions";
 
 /// Networks implemented by the reviewed Wcash backend.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -118,6 +128,9 @@ pub enum AdapterError {
     /// The wallet database could not be read or written.
     #[error("wallet file operation failed: {0}")]
     Io(#[from] io::Error),
+    /// Local mobile metadata or checkpointing failed.
+    #[error("wallet database operation failed: {0}")]
+    Database(#[from] rusqlite::Error),
     /// The reviewed Wcash core refused an operation.
     #[error("Wcash core error: {0}")]
     Core(String),
@@ -257,39 +270,21 @@ impl Runtime {
         }
     }
 
-    fn history(&self, limit: usize) -> Result<ConfirmedTransactionHistory, AdapterError> {
+    fn history(&self, limit: usize) -> Result<ConfirmedTransactionSummaryHistory, AdapterError> {
         match self {
-            Self::Testnet(runtime) => runtime.confirmed_transactions(limit).map_err(core_error),
+            Self::Testnet(runtime) => confirmed_transaction_summary_history(
+                runtime.wallet_path(),
+                WalletNetwork::Testnet,
+                limit,
+            )
+            .map_err(core_error),
             #[cfg(feature = "regtest")]
-            Self::Regtest(runtime) => runtime.confirmed_transactions(limit).map_err(core_error),
-        }
-    }
-
-    async fn send(
-        &mut self,
-        seed: &SecretVec<u8>,
-        payments: Vec<WcashTestnetPayment>,
-    ) -> Result<SignedTransaction, AdapterError> {
-        match self {
-            Self::Testnet(runtime) => runtime.send(seed, payments).await.map_err(core_error),
-            #[cfg(feature = "regtest")]
-            Self::Regtest(runtime) => runtime.send(seed, payments).await.map_err(core_error),
-        }
-    }
-
-    async fn broadcast(&mut self, signed: &SignedTransaction) -> Result<String, AdapterError> {
-        match self {
-            Self::Testnet(runtime) => runtime
-                .broadcast(signed)
-                .await
-                .map(|result| result.txid)
-                .map_err(core_error),
-            #[cfg(feature = "regtest")]
-            Self::Regtest(runtime) => runtime
-                .broadcast(signed)
-                .await
-                .map(|result| result.txid)
-                .map_err(core_error),
+            Self::Regtest(runtime) => confirmed_transaction_summary_history(
+                runtime.wallet_path(),
+                WalletNetwork::Regtest,
+                limit,
+            )
+            .map_err(core_error),
         }
     }
 }
@@ -327,7 +322,7 @@ pub struct WcashMobileAdapter {
     runtime: Runtime,
     cancellation: WalletSyncCancellation,
     last_sync: Option<WalletBalanceSummary>,
-    pending_send: Option<PendingSend>,
+    pending_send: Option<PendingTransaction>,
 }
 
 impl WcashMobileAdapter {
@@ -451,13 +446,70 @@ impl WcashMobileAdapter {
             ));
         }
         let wallet_path = wallet_path.as_ref().to_path_buf();
-        write_wallet_database(&wallet_path, &decoded.database)?;
-        let (runtime, info) = Runtime::open(expected_network, endpoint, &wallet_path).await?;
+        let parent = wallet_path.parent().ok_or_else(|| {
+            AdapterError::InvalidInput("wallet path has no parent directory".to_owned())
+        })?;
+        fs::create_dir_all(parent)?;
+        set_private_directory_permissions(parent)?;
+
+        // Validate every property in an isolated same-filesystem directory.
+        // Nothing below this point may alter an installed wallet until all
+        // checks, including seed ownership, have succeeded.
+        let validation_directory = tempfile::Builder::new()
+            .prefix(".wcash-restore-")
+            .tempdir_in(parent)?;
+        set_private_directory_permissions(validation_directory.path())?;
+        let validation_path = validation_directory.path().join("wallet.sqlite");
+        write_private_file(&validation_path, &decoded.database)?;
+        let info = inspect_wallet(&validation_path, expected_network.wallet_network())
+            .map_err(core_error)?;
         if info.birthday_height != decoded.birthday {
             return Err(AdapterError::InvalidWalletBytes(
                 "wallet birthday does not match its database".to_owned(),
             ));
         }
+        let mnemonic = parse_seed(&decoded.seed_phrase)?;
+        let seed = SecretVec::new(mnemonic.to_seed("").to_vec());
+        verify_wallet_seed(&validation_path, expected_network.wallet_network(), &seed).map_err(
+            |_| {
+                AdapterError::InvalidWalletBytes(
+                    "recovery phrase does not control the wallet database".to_owned(),
+                )
+            },
+        )?;
+        let (validated_runtime, validated_info) =
+            Runtime::open(expected_network, endpoint, &validation_path).await?;
+        if validated_info.birthday_height != decoded.birthday {
+            return Err(AdapterError::InvalidWalletBytes(
+                "attested wallet birthday does not match its database".to_owned(),
+            ));
+        }
+        drop(validated_runtime);
+
+        let mut install = DatabaseInstall::begin(&validation_path, &wallet_path)?;
+        let (runtime, installed_info) =
+            match Runtime::open(expected_network, endpoint, &wallet_path).await {
+                Ok(opened) => opened,
+                Err(error) => {
+                    install.rollback()?;
+                    return Err(error);
+                }
+            };
+        if installed_info.birthday_height != decoded.birthday {
+            drop(runtime);
+            install.rollback()?;
+            return Err(AdapterError::InvalidWalletBytes(
+                "installed wallet birthday changed during restore".to_owned(),
+            ));
+        }
+        if verify_wallet_seed(&wallet_path, expected_network.wallet_network(), &seed).is_err() {
+            drop(runtime);
+            install.rollback()?;
+            return Err(AdapterError::InvalidWalletBytes(
+                "installed wallet no longer matches its recovery phrase".to_owned(),
+            ));
+        }
+        install.commit();
         Ok(Self::from_parts(
             expected_network,
             endpoint,
@@ -517,6 +569,7 @@ impl WcashMobileAdapter {
         }
         let before = self.runtime.balance().ok();
         let summary = self.runtime.sync(&self.cancellation).await?;
+        self.clear_confirmed_pending()?;
         let start = before
             .as_ref()
             .map_or(self.birthday, |value| value.fully_scanned_height);
@@ -550,7 +603,11 @@ impl WcashMobileAdapter {
         };
         let percentage = if summary.synchronized { 100 } else { 0 };
         Ok(serde_json::to_string_pretty(&SyncStatus {
-            scan_ranges: Vec::new(),
+            scan_ranges: synchronized_scan_ranges(
+                self.birthday,
+                summary.fully_scanned_height,
+                summary.synchronized,
+            ),
             sync_start_height: summary.fully_scanned_height,
             session_blocks_scanned: 0,
             total_blocks_scanned: summary.fully_scanned_height.saturating_sub(self.birthday),
@@ -670,14 +727,15 @@ impl WcashMobileAdapter {
         parse_address_for_network_json(address, self.network)
     }
 
-    /// Returns bounded, newest-first confirmed history in the upstream list shape.
+    /// Returns bounded, newest-first confirmed and locally-pending history in
+    /// the upstream list shape.
     pub fn confirmed_history_json(&self, limit: usize) -> Result<String, AdapterError> {
         if limit == 0 || limit > MAX_HISTORY_ROWS {
             return Err(AdapterError::InvalidInput(format!(
                 "history limit must be between 1 and {MAX_HISTORY_ROWS}"
             )));
         }
-        let history = match self.runtime.history(limit) {
+        let mut history = match self.runtime.history(limit) {
             Ok(history) => mobile_history(history),
             Err(error) if recovery_is_incomplete(&error) => MobileHistory {
                 value_transfers: Vec::new(),
@@ -685,15 +743,17 @@ impl WcashMobileAdapter {
             },
             Err(error) => return Err(error),
         };
+        self.apply_stored_metadata_to_confirmed(&mut history.value_transfers)?;
+        let mut pending = self.pending_history()?;
+        pending.extend(history.value_transfers);
+        pending.truncate(limit);
+        history.value_transfers = pending;
+        history.total = history.value_transfers.len();
         Ok(serde_json::to_string_pretty(&history)?)
     }
 
-    /// Validates and prepares a side-effect-free Wcash send preview.
-    ///
-    /// Zingo Mobile invokes this contract repeatedly as the form changes and
-    /// once more after the user accepts the confirmation sheet. The Wcash core
-    /// has no pure proposal API, so this returns ZIP 317's minimum preview fee;
-    /// [`Self::confirm_send_json`] verifies the signed fee before broadcasting.
+    /// Selects and locks one exact Wcash proposal without loading spending
+    /// authority, returning its exact ZIP 317 fee before user consent.
     pub async fn stage_send_json(&mut self, send_json: &str) -> Result<String, AdapterError> {
         let requests: Vec<MobilePayment> = serde_json::from_str(send_json)?;
         if requests.is_empty() {
@@ -716,37 +776,39 @@ impl WcashMobileAdapter {
                     "memo exceeds 512 bytes".to_owned(),
                 ));
             }
-            payments.push(WcashTestnetPayment {
+            payments.push(TransferRecipient {
                 address: request.address,
                 amount_zat: request.amount,
                 memo,
             });
         }
-
-        if let Some(pending) = &self.pending_send
-            && pending.payments != payments
-            && pending.signed.is_some()
-        {
-            return Err(AdapterError::SendAlreadyStaged);
-        }
-        let fee = self
+        let request = PendingRequest::Send(payments.clone());
+        if self
             .pending_send
             .as_ref()
-            .filter(|pending| pending.payments == payments)
-            .and_then(|pending| pending.signed.as_ref())
-            .map_or(MINIMUM_PREVIEW_FEE_ZAT, |signed| signed.fee_zat);
-        match &mut self.pending_send {
-            Some(pending) if pending.payments == payments => {
-                pending.preview_fee_zat = fee;
-            }
-            _ => {
-                self.pending_send = Some(PendingSend {
-                    payments,
-                    preview_fee_zat: fee,
-                    signed: None,
-                });
-            }
+            .is_some_and(|pending| pending.request == request)
+        {
+            return self.pending_proposal_json();
         }
+        self.cancel_replaceable_preview()?;
+        let staged = propose_transfer_offline(
+            &self.wallet_path,
+            self.network.wallet_network(),
+            payments,
+            self.minimum_confirmations(),
+            self.network == MobileNetwork::Regtest,
+            TRANSACTION_EXPIRY_DELTA,
+            TRANSACTION_LOCK_BLOCKS,
+        )
+        .map_err(core_error)?;
+        let fee = staged.fee_zat();
+        self.pending_send = Some(PendingTransaction {
+            request,
+            fee_zat: fee,
+            value_to_shield_zat: None,
+            staged: Some(staged),
+            calculated: None,
+        });
         let response = SendProposal {
             fee,
             source_pools: vec!["ironwood"],
@@ -755,59 +817,377 @@ impl WcashMobileAdapter {
         Ok(serde_json::to_string_pretty(&response)?)
     }
 
-    /// Signs after consent and broadcasts only when the previewed fee is exact.
-    ///
-    /// If the actual fee is above the minimum preview, the signed bytes stay
-    /// staged and this call fails closed. The unchanged UI's next preview then
-    /// shows that exact fee, and its next confirm retries the same signed bytes.
+    /// Previews mature transparent coinbase shielding with an exact fee and
+    /// value while retaining the same confirmation flow as upstream.
+    pub fn stage_shield_json(&mut self) -> Result<String, AdapterError> {
+        let request = PendingRequest::Shield;
+        if self
+            .pending_send
+            .as_ref()
+            .is_some_and(|pending| pending.request == request)
+        {
+            return self.pending_proposal_json();
+        }
+        self.cancel_replaceable_preview()?;
+        let staged = propose_coinbase_shielding_offline(
+            &self.wallet_path,
+            self.network.wallet_network(),
+            MAX_COINBASE_SHIELDING_INPUTS,
+            TRANSACTION_EXPIRY_DELTA,
+            TRANSACTION_LOCK_BLOCKS,
+        )
+        .map_err(core_error)?;
+        let fee_zat = staged.fee_zat();
+        let value_to_shield_zat = staged.value_to_shield_zat().ok_or_else(|| {
+            AdapterError::Core("shield proposal omitted its exact value".to_owned())
+        })?;
+        self.pending_send = Some(PendingTransaction {
+            request,
+            fee_zat,
+            value_to_shield_zat: Some(value_to_shield_zat),
+            staged: Some(staged),
+            calculated: None,
+        });
+        self.pending_proposal_json()
+    }
+
+    /// Verifies seed ownership again, signs the exact consented proposal,
+    /// persists its pending projection, and broadcasts those same bytes.
     pub async fn confirm_send_json(&mut self) -> Result<String, AdapterError> {
         let mut pending = self.pending_send.take().ok_or(AdapterError::NoStagedSend)?;
-        let signed = match pending.signed.clone() {
-            Some(signed) => signed,
-            None => {
-                let mnemonic = parse_seed(self.seed_phrase.expose_secret())?;
-                let seed = SecretVec::new(mnemonic.to_seed("").to_vec());
-                match self.runtime.send(&seed, pending.payments.clone()).await {
-                    Ok(signed) => signed,
-                    Err(error) => {
-                        self.pending_send = Some(pending);
-                        return Err(error);
-                    }
-                }
-            }
-        };
-        pending.signed = Some(signed.clone());
-        if signed.fee_zat != pending.preview_fee_zat {
-            self.pending_send = Some(pending);
-            return Err(AdapterError::UnsupportedFeature(
-                "the exact signed fee differs from the send preview; review it again",
-            ));
-        }
-        let txid = match self.runtime.broadcast(&signed).await {
-            Ok(txid) => txid,
+        let mnemonic = match parse_seed(self.seed_phrase.expose_secret()) {
+            Ok(mnemonic) => mnemonic,
             Err(error) => {
                 self.pending_send = Some(pending);
                 return Err(error);
             }
         };
-        Ok(serde_json::to_string_pretty(&serde_json::json!({
-            "txids": [txid]
-        }))?)
+        let seed = SecretVec::new(mnemonic.to_seed("").to_vec());
+        if let Err(error) =
+            verify_wallet_seed(&self.wallet_path, self.network.wallet_network(), &seed)
+        {
+            self.pending_send = Some(pending);
+            return Err(core_error(error));
+        }
+        if pending.calculated.is_none() {
+            let Some(staged) = pending.staged.as_ref() else {
+                self.pending_send = Some(pending);
+                return Err(AdapterError::NoStagedSend);
+            };
+            match calculate_staged_transaction(
+                &self.wallet_path,
+                self.network.wallet_network(),
+                &seed,
+                staged,
+            ) {
+                Ok(calculated) => pending.calculated = Some(calculated),
+                Err(error) => {
+                    self.pending_send = Some(pending);
+                    return Err(core_error(error));
+                }
+            }
+        }
+        let Some(calculated) = pending.calculated.as_ref() else {
+            self.pending_send = Some(pending);
+            return Err(AdapterError::NoStagedSend);
+        };
+        if calculated.signed().fee_zat != pending.fee_zat {
+            self.pending_send = Some(pending);
+            return Err(AdapterError::Core(
+                "calculated fee differs from the consented proposal".to_owned(),
+            ));
+        }
+        if let Err(error) = self.persist_pending_metadata(&pending, "calculated") {
+            self.pending_send = Some(pending);
+            return Err(error);
+        }
+        if let Err(error) = self.checkpoint_wallet_database() {
+            self.pending_send = Some(pending);
+            return Err(error);
+        }
+        let mut client =
+            match AttestedWcashClient::connect(&self.endpoint, self.network.wallet_network()).await
+            {
+                Ok(client) => client,
+                Err(error) => {
+                    self.pending_send = Some(pending);
+                    return Err(core_error(error));
+                }
+            };
+        let txid = match broadcast_calculated_transaction(&mut client, calculated).await {
+            Ok(result) => result.txid,
+            Err(error) => {
+                self.pending_send = Some(pending);
+                return Err(core_error(error));
+            }
+        };
+        // The node accepted these exact bytes. A local follow-up write cannot
+        // turn that fact into a send error that would invite a replacement.
+        // The pre-broadcast `calculated` row and signed bytes are already
+        // durable and remain visible after a crash.
+        let persistence = self
+            .update_pending_state(&txid, "transmitted")
+            .and_then(|()| self.checkpoint_wallet_database());
+        accepted_broadcast_result(&mut self.pending_send, pending, txid, persistence)
     }
 
-    /// Discards a side-effect-free preview. Signed retries remain staged.
-    pub fn discard_staged_send(&mut self) {
-        if self
+    /// Discards an unsigned preview and releases only its proposal-owned locks.
+    pub fn discard_staged_send(&mut self) -> Result<(), AdapterError> {
+        self.cancel_replaceable_preview()
+    }
+
+    fn minimum_confirmations(&self) -> u32 {
+        match self.network {
+            MobileNetwork::Testnet => COINBASE_SHIELDING_MATURITY,
+            MobileNetwork::Regtest => LOCAL_REGTEST_CONFIRMATIONS,
+        }
+    }
+
+    fn pending_proposal_json(&self) -> Result<String, AdapterError> {
+        let pending = self
             .pending_send
             .as_ref()
-            .is_some_and(|pending| pending.signed.is_none())
+            .ok_or(AdapterError::NoStagedSend)?;
+        match pending.request {
+            PendingRequest::Send(_) => Ok(serde_json::to_string_pretty(&SendProposal {
+                fee: pending.fee_zat,
+                source_pools: vec!["ironwood"],
+                destination_pools: vec!["ironwood"],
+            })?),
+            PendingRequest::Shield => Ok(serde_json::to_string_pretty(&serde_json::json!({
+                "fee": pending.fee_zat,
+                "value_to_shield": pending.value_to_shield_zat.ok_or_else(|| {
+                    AdapterError::Core("shield preview is missing its exact value".to_owned())
+                })?
+            }))?),
+        }
+    }
+
+    fn cancel_replaceable_preview(&mut self) -> Result<(), AdapterError> {
+        let Some(pending) = self.pending_send.take() else {
+            return Ok(());
+        };
+        if pending.calculated.is_some() {
+            self.pending_send = Some(pending);
+            return Err(AdapterError::SendAlreadyStaged);
+        }
+        if let Some(staged) = pending.staged.as_ref()
+            && let Err(error) =
+                cancel_staged_transaction(&self.wallet_path, self.network.wallet_network(), staged)
+        {
+            self.pending_send = Some(pending);
+            return Err(core_error(error));
+        }
+        Ok(())
+    }
+
+    fn ensure_pending_table(connection: &Connection) -> Result<(), AdapterError> {
+        connection.execute_batch(&format!(
+            "CREATE TABLE IF NOT EXISTS {MOBILE_PENDING_TABLE} (
+                txid TEXT PRIMARY KEY NOT NULL,
+                kind TEXT NOT NULL CHECK (kind IN ('sent', 'shield')),
+                value_zat INTEGER NOT NULL CHECK (value_zat >= 0),
+                fee_zat INTEGER NOT NULL CHECK (fee_zat >= 0),
+                state TEXT NOT NULL CHECK (state IN ('calculated', 'transmitted')),
+                recipient_address TEXT,
+                created_at INTEGER NOT NULL
+            );"
+        ))?;
+        Ok(())
+    }
+
+    fn persist_pending_metadata(
+        &self,
+        pending: &PendingTransaction,
+        state: &'static str,
+    ) -> Result<(), AdapterError> {
+        let signed = pending
+            .calculated
+            .as_ref()
+            .ok_or(AdapterError::NoStagedSend)?
+            .signed();
+        let (kind, value_zat, recipient_address) = match &pending.request {
+            PendingRequest::Send(payments) => (
+                "sent",
+                payments.iter().try_fold(0_u64, |total, payment| {
+                    total.checked_add(payment.amount_zat).ok_or_else(|| {
+                        AdapterError::InvalidInput("payment total overflows u64".to_owned())
+                    })
+                })?,
+                payments.first().map(|payment| payment.address.as_str()),
+            ),
+            PendingRequest::Shield => (
+                "shield",
+                pending.value_to_shield_zat.ok_or_else(|| {
+                    AdapterError::Core("shield proposal omitted its exact value".to_owned())
+                })?,
+                None,
+            ),
+        };
+        let created_at = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|error| AdapterError::Core(error.to_string()))?
+            .as_secs();
+        let connection = Connection::open(&self.wallet_path)?;
+        Self::ensure_pending_table(&connection)?;
+        connection.execute(
+            &format!(
+                "INSERT INTO {MOBILE_PENDING_TABLE}
+                    (txid, kind, value_zat, fee_zat, state, recipient_address, created_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+                 ON CONFLICT(txid) DO UPDATE SET state = excluded.state"
+            ),
+            params![
+                signed.txid,
+                kind,
+                i64::try_from(value_zat).map_err(|_| AdapterError::InvalidInput(
+                    "pending value is too large".to_owned()
+                ))?,
+                i64::try_from(pending.fee_zat).map_err(|_| AdapterError::InvalidInput(
+                    "pending fee is too large".to_owned()
+                ))?,
+                state,
+                recipient_address,
+                i64::try_from(created_at).unwrap_or(i64::MAX),
+            ],
+        )?;
+        Ok(())
+    }
+
+    fn update_pending_state(&self, txid: &str, state: &'static str) -> Result<(), AdapterError> {
+        let connection = Connection::open(&self.wallet_path)?;
+        Self::ensure_pending_table(&connection)?;
+        let changed = connection.execute(
+            &format!("UPDATE {MOBILE_PENDING_TABLE} SET state = ?1 WHERE txid = ?2"),
+            params![state, txid],
+        )?;
+        if changed != 1 {
+            return Err(AdapterError::Core(
+                "pending transaction metadata disappeared before save".to_owned(),
+            ));
+        }
+        Ok(())
+    }
+
+    fn checkpoint_wallet_database(&self) -> Result<(), AdapterError> {
+        let connection = Connection::open(&self.wallet_path)?;
+        connection.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")?;
+        Ok(())
+    }
+
+    fn clear_confirmed_pending(&mut self) -> Result<(), AdapterError> {
+        let Some(txid) = self
+            .pending_send
+            .as_ref()
+            .and_then(|pending| pending.calculated.as_ref())
+            .map(|calculated| calculated.signed().txid.clone())
+        else {
+            return Ok(());
+        };
+        let confirmed = self.runtime.history(MAX_HISTORY_ROWS)?;
+        if confirmed
+            .transactions
+            .iter()
+            .any(|transaction| transaction.transaction.txid == txid)
         {
             self.pending_send = None;
         }
+        Ok(())
+    }
+
+    fn pending_history(&self) -> Result<Vec<MobileValueTransfer>, AdapterError> {
+        let page = match active_pending_signed_transactions(
+            &self.wallet_path,
+            self.network.wallet_network(),
+            None,
+            None,
+            MAX_PENDING_TRANSACTION_PAGE_SIZE,
+        ) {
+            Ok(page) => page,
+            Err(error) if error.to_string().contains("recovery is incomplete") => {
+                return Ok(Vec::new());
+            }
+            Err(error) => return Err(core_error(error)),
+        };
+        if page.transactions.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut active = page
+            .transactions
+            .into_iter()
+            .map(|transaction| transaction.txid)
+            .collect::<std::collections::HashSet<_>>();
+        let mut result = Vec::new();
+        for row in self.stored_pending_metadata()? {
+            if !active.contains(&row.txid) {
+                continue;
+            }
+            active.remove(&row.txid);
+            result.push(row.into_mobile_value_transfer()?);
+        }
+        for txid in active {
+            result.push(MobileValueTransfer {
+                txid,
+                datetime: 0,
+                status: "calculated",
+                blockheight: 0,
+                transaction_fee: None,
+                kind: "unknown",
+                // Upstream's required numeric field uses zero only as the
+                // explicit unavailable sentinel; kind remains unknown.
+                value: 0,
+                pools_sent_from: Vec::new(),
+                pools_received: Vec::new(),
+                recipient_address: None,
+            });
+        }
+        Ok(result)
+    }
+
+    fn stored_pending_metadata(&self) -> Result<Vec<PendingMetadata>, AdapterError> {
+        let connection = Connection::open(&self.wallet_path)?;
+        let exists = connection.query_row(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?1)",
+            [MOBILE_PENDING_TABLE],
+            |row| row.get::<_, bool>(0),
+        )?;
+        if !exists {
+            return Ok(Vec::new());
+        }
+        let mut statement = connection.prepare(&format!(
+            "SELECT txid, kind, value_zat, fee_zat, state, recipient_address, created_at
+             FROM {MOBILE_PENDING_TABLE} ORDER BY created_at DESC"
+        ))?;
+        let rows = statement.query_map([], |row| {
+            Ok(PendingMetadata {
+                txid: row.get(0)?,
+                kind: row.get(1)?,
+                value_zat: row.get::<_, i64>(2)?,
+                fee_zat: row.get::<_, i64>(3)?,
+                state: row.get(4)?,
+                recipient_address: row.get(5)?,
+                created_at: row.get::<_, i64>(6)?,
+            })
+        })?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    fn apply_stored_metadata_to_confirmed(
+        &self,
+        confirmed: &mut [MobileValueTransfer],
+    ) -> Result<(), AdapterError> {
+        let metadata = self.stored_pending_metadata()?;
+        for row in confirmed {
+            if let Some(stored) = metadata.iter().find(|stored| stored.txid == row.txid) {
+                stored.apply_to_confirmed(row)?;
+            }
+        }
+        Ok(())
     }
 
     /// Serializes the seed plus SQLite database into bounded checksummed wallet bytes.
     pub fn save_wallet_bytes(&self) -> Result<Vec<u8>, AdapterError> {
+        self.checkpoint_wallet_database()?;
         let database = fs::read(&self.wallet_path)?;
         encode_wallet(
             self.network,
@@ -841,6 +1221,18 @@ fn parse_address_for_network_json(
         receivers_available: vec!["orchard"],
         shielded_only_ua: address,
     })?)
+}
+
+fn accepted_broadcast_result(
+    slot: &mut Option<PendingTransaction>,
+    pending: PendingTransaction,
+    txid: String,
+    _persistence: Result<(), AdapterError>,
+) -> Result<String, AdapterError> {
+    *slot = Some(pending);
+    Ok(serde_json::to_string_pretty(&serde_json::json!({
+        "txids": [txid]
+    }))?)
 }
 
 fn parse_seed(seed_phrase: &str) -> Result<Mnemonic<English>, AdapterError> {
@@ -978,9 +1370,11 @@ struct MobileValueTransfer {
     pools_sent_from: Vec<&'static str>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pools_received: Vec<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    recipient_address: Option<String>,
 }
 
-fn mobile_history(history: ConfirmedTransactionHistory) -> MobileHistory {
+fn mobile_history(history: ConfirmedTransactionSummaryHistory) -> MobileHistory {
     let value_transfers = history
         .transactions
         .into_iter()
@@ -993,7 +1387,24 @@ fn mobile_history(history: ConfirmedTransactionHistory) -> MobileHistory {
     }
 }
 
-fn mobile_value_transfer(tx: ConfirmedTransaction) -> MobileValueTransfer {
+fn mobile_value_transfer(summary: ConfirmedTransactionSummary) -> MobileValueTransfer {
+    let tx = summary.transaction;
+    let Some(value) = summary.value_zat else {
+        return MobileValueTransfer {
+            txid: tx.txid,
+            datetime: tx.timestamp.unwrap_or(0),
+            status: "confirmed",
+            blockheight: tx.mined_height,
+            transaction_fee: None,
+            kind: "unknown",
+            // Preserve the upstream JSON schema without guessing a transfer
+            // amount. The unknown kind makes zero an availability sentinel.
+            value: 0,
+            pools_sent_from: Vec::new(),
+            pools_received: Vec::new(),
+            recipient_address: None,
+        };
+    };
     let kind = match (tx.direction, tx.kind) {
         (ConfirmedTransactionDirection::Incoming, _) => "received",
         (ConfirmedTransactionDirection::Outgoing, _) => "sent",
@@ -1021,9 +1432,10 @@ fn mobile_value_transfer(tx: ConfirmedTransaction) -> MobileValueTransfer {
         blockheight: tx.mined_height,
         transaction_fee: tx.fee_zat,
         kind,
-        value: tx.amount_delta_zat.unsigned_abs(),
+        value,
         pools_sent_from,
         pools_received,
+        recipient_address: None,
     }
 }
 
@@ -1035,10 +1447,108 @@ struct MobilePayment {
     memo: Option<String>,
 }
 
-struct PendingSend {
-    payments: Vec<WcashTestnetPayment>,
-    preview_fee_zat: u64,
-    signed: Option<SignedTransaction>,
+#[derive(Eq, PartialEq)]
+enum PendingRequest {
+    Send(Vec<TransferRecipient>),
+    Shield,
+}
+
+struct PendingTransaction {
+    request: PendingRequest,
+    fee_zat: u64,
+    value_to_shield_zat: Option<u64>,
+    staged: Option<StagedTransactionProposal>,
+    calculated: Option<CalculatedTransaction>,
+}
+
+struct PendingMetadata {
+    txid: String,
+    kind: String,
+    value_zat: i64,
+    fee_zat: i64,
+    state: String,
+    recipient_address: Option<String>,
+    created_at: i64,
+}
+
+impl PendingMetadata {
+    fn apply_to_confirmed(&self, row: &mut MobileValueTransfer) -> Result<(), AdapterError> {
+        if !matches!(self.state.as_str(), "calculated" | "transmitted") {
+            return Err(AdapterError::Core(
+                "pending transaction state is invalid".to_owned(),
+            ));
+        }
+        let value = u64::try_from(self.value_zat)
+            .map_err(|_| AdapterError::Core("pending transaction value is negative".to_owned()))?;
+        let fee = u64::try_from(self.fee_zat)
+            .map_err(|_| AdapterError::Core("pending transaction fee is negative".to_owned()))?;
+        row.value = value;
+        row.transaction_fee = Some(fee);
+        row.recipient_address.clone_from(&self.recipient_address);
+        match self.kind.as_str() {
+            "sent" => {
+                row.kind = "sent";
+                row.pools_sent_from = vec!["Ironwood"];
+                row.pools_received.clear();
+            }
+            "shield" => {
+                row.kind = "shield";
+                row.pools_sent_from = vec!["Transparent"];
+                row.pools_received = vec!["Ironwood"];
+            }
+            _ => {
+                return Err(AdapterError::Core(
+                    "pending transaction kind is invalid".to_owned(),
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    fn into_mobile_value_transfer(self) -> Result<MobileValueTransfer, AdapterError> {
+        let shielding = match self.kind.as_str() {
+            "sent" => false,
+            "shield" => true,
+            _ => {
+                return Err(AdapterError::Core(
+                    "pending transaction kind is invalid".to_owned(),
+                ));
+            }
+        };
+        let status = match self.state.as_str() {
+            "calculated" => "calculated",
+            "transmitted" => "transmitted",
+            _ => {
+                return Err(AdapterError::Core(
+                    "pending transaction state is invalid".to_owned(),
+                ));
+            }
+        };
+        let value = u64::try_from(self.value_zat)
+            .map_err(|_| AdapterError::Core("pending transaction value is negative".to_owned()))?;
+        let fee = u64::try_from(self.fee_zat)
+            .map_err(|_| AdapterError::Core("pending transaction fee is negative".to_owned()))?;
+        Ok(MobileValueTransfer {
+            txid: self.txid,
+            datetime: u32::try_from(self.created_at).unwrap_or(u32::MAX),
+            status,
+            blockheight: 0,
+            transaction_fee: Some(fee),
+            kind: if shielding { "shield" } else { "sent" },
+            value,
+            pools_sent_from: if shielding {
+                vec!["Transparent"]
+            } else {
+                vec!["Ironwood"]
+            },
+            pools_received: if shielding {
+                vec!["Ironwood"]
+            } else {
+                Vec::new()
+            },
+            recipient_address: self.recipient_address,
+        })
+    }
 }
 
 #[derive(Serialize)]
@@ -1065,7 +1575,7 @@ struct SyncComplete {
 
 #[derive(Serialize)]
 struct SyncStatus {
-    scan_ranges: Vec<serde_json::Value>,
+    scan_ranges: Vec<SyncScanRange>,
     sync_start_height: u32,
     session_blocks_scanned: u32,
     total_blocks_scanned: u32,
@@ -1077,6 +1587,28 @@ struct SyncStatus {
     percentage_total_outputs_scanned: u32,
     total_outputs_scanned: u64,
     total_outputs: u64,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize)]
+struct SyncScanRange {
+    priority: &'static str,
+    start_block: u32,
+    end_block: u32,
+}
+
+fn synchronized_scan_ranges(
+    birthday: u32,
+    fully_scanned_height: u32,
+    synchronized: bool,
+) -> Vec<SyncScanRange> {
+    if !synchronized || fully_scanned_height < birthday {
+        return Vec::new();
+    }
+    vec![SyncScanRange {
+        priority: "Scanned",
+        start_block: birthday,
+        end_block: fully_scanned_height,
+    }]
 }
 
 struct DecodedWallet {
@@ -1177,19 +1709,141 @@ fn encode_wallet(
     Ok(bytes)
 }
 
-fn write_wallet_database(path: &Path, database: &[u8]) -> Result<(), AdapterError> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)?;
-    }
-    let temporary = path.with_extension("wcash-restore.tmp");
-    fs::write(&temporary, database)?;
+fn set_private_directory_permissions(path: &Path) -> Result<(), AdapterError> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(&temporary, fs::Permissions::from_mode(0o600))?;
+        fs::set_permissions(path, fs::Permissions::from_mode(0o700))?;
     }
-    fs::rename(&temporary, path)?;
     Ok(())
+}
+
+fn write_private_file(path: &Path, database: &[u8]) -> Result<(), AdapterError> {
+    fs::write(path, database)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(path, fs::Permissions::from_mode(0o600))?;
+    }
+    Ok(())
+}
+
+struct DatabaseInstall {
+    parts: Vec<DatabasePart>,
+    // Kept as a normal private directory so an OS-level rollback failure can
+    // never cause TempDir::drop to delete the only copy of the old wallet.
+    rollback_directory: PathBuf,
+    committed: bool,
+}
+
+struct DatabasePart {
+    original: PathBuf,
+    backup: Option<PathBuf>,
+    restored: bool,
+}
+
+impl DatabaseInstall {
+    fn begin(validated: &Path, destination: &Path) -> Result<Self, AdapterError> {
+        let parent = destination.parent().ok_or_else(|| {
+            AdapterError::InvalidInput("wallet path has no parent directory".to_owned())
+        })?;
+        let rollback_directory = tempfile::Builder::new()
+            .prefix(".wcash-rollback-")
+            .tempdir_in(parent)?;
+        set_private_directory_permissions(rollback_directory.path())?;
+        let rollback_directory = rollback_directory.keep();
+        let destinations = [
+            destination.to_path_buf(),
+            PathBuf::from(format!("{}-wal", destination.display())),
+            PathBuf::from(format!("{}-shm", destination.display())),
+        ];
+        let mut install = Self {
+            parts: Vec::with_capacity(destinations.len()),
+            rollback_directory,
+            committed: false,
+        };
+        for (index, original) in destinations.into_iter().enumerate() {
+            let backup = if original.exists() {
+                let backup = install.rollback_directory.join(format!("original-{index}"));
+                if let Err(error) = fs::rename(&original, &backup) {
+                    let _ = install.rollback();
+                    return Err(error.into());
+                }
+                Some(backup)
+            } else {
+                None
+            };
+            install.parts.push(DatabasePart {
+                original,
+                backup,
+                restored: false,
+            });
+        }
+        if let Err(error) = fs::rename(validated, destination) {
+            let _ = install.rollback();
+            return Err(error.into());
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Err(error) = fs::set_permissions(destination, fs::Permissions::from_mode(0o600))
+            {
+                let _ = install.rollback();
+                return Err(error.into());
+            }
+        }
+        Ok(install)
+    }
+
+    fn rollback(&mut self) -> Result<(), AdapterError> {
+        let mut first_error = None;
+        for part in &mut self.parts {
+            if part.restored {
+                continue;
+            }
+            let result = match &part.backup {
+                Some(backup) => fs::rename(backup, &part.original),
+                None => match fs::remove_file(&part.original) {
+                    Ok(()) => Ok(()),
+                    Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+                    Err(error) => Err(error),
+                },
+            };
+            match result {
+                Ok(()) => part.restored = true,
+                Err(error) if first_error.is_none() => first_error = Some(error),
+                Err(_) => {}
+            }
+        }
+        match first_error {
+            Some(error) => Err(io::Error::new(
+                error.kind(),
+                format!(
+                    "wallet rollback failed; original database parts remain at {}: {error}",
+                    self.rollback_directory.display()
+                ),
+            )
+            .into()),
+            None => {
+                self.committed = true;
+                let _ = fs::remove_dir_all(&self.rollback_directory);
+                Ok(())
+            }
+        }
+    }
+
+    fn commit(mut self) {
+        self.committed = true;
+        let _ = fs::remove_dir_all(&self.rollback_directory);
+    }
+}
+
+impl Drop for DatabaseInstall {
+    fn drop(&mut self) {
+        if !self.committed {
+            let _ = self.rollback();
+        }
+    }
 }
 
 /// Reads recovery data without opening SQLite or contacting a server.
@@ -1206,9 +1860,8 @@ pub fn validate_wallet_bytes(bytes: &[u8]) -> Result<(), AdapterError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wcash_wallet::{
-        AccountBalanceSummary, BlockRef, derive_wallet_spending_key, encode_orchard_receiver,
-    };
+    use wcash_wallet::{derive_wallet_spending_key, encode_orchard_receiver};
+    use zingolib::wcash::BlockRef;
 
     const PHRASE: &str = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art";
 
@@ -1228,6 +1881,19 @@ mod tests {
         ));
         assert!(MobileNetwork::from_chain_hint("zcash").is_err());
         assert_eq!(MobileNetwork::Testnet.ticker(), "TWC");
+    }
+
+    #[test]
+    fn synchronized_status_has_the_scanned_range_expected_by_upstream_ui() {
+        assert_eq!(
+            synchronized_scan_ranges(187, 426, true),
+            vec![SyncScanRange {
+                priority: "Scanned",
+                start_block: 187,
+                end_block: 426,
+            }]
+        );
+        assert!(synchronized_scan_ranges(187, 425, false).is_empty());
     }
 
     #[tokio::test]
@@ -1296,6 +1962,17 @@ mod tests {
         let sync: serde_json::Value =
             serde_json::from_str(&wallet.synchronize().await.unwrap()).unwrap();
         assert!(sync["sync_complete"]["sync_end_height"].is_number());
+        let completed_status: serde_json::Value =
+            serde_json::from_str(&wallet.sync_status_json().unwrap()).unwrap();
+        assert_eq!(completed_status["scan_ranges"][0]["priority"], "Scanned");
+        assert_eq!(
+            completed_status["scan_ranges"][0]["start_block"],
+            recovery["birthday"]
+        );
+        assert_eq!(
+            completed_status["scan_ranges"][0]["end_block"],
+            sync["sync_complete"]["sync_end_height"]
+        );
         let balance: serde_json::Value =
             serde_json::from_str(&wallet.balance_json().unwrap()).unwrap();
         assert!(balance["total_ironwood_balance"].is_number());
@@ -1306,23 +1983,6 @@ mod tests {
             serde_json::from_str(&WcashMobileAdapter::parse_address_json(address).unwrap())
                 .unwrap();
         assert_eq!(parsed["chain_name"], "regtest");
-        let first_preview: serde_json::Value = serde_json::from_str(
-            &wallet
-                .stage_send_json(&format!(r#"[{{"address":"{address}","amount":1}}]"#))
-                .await
-                .unwrap(),
-        )
-        .unwrap();
-        assert_eq!(first_preview["fee"], MINIMUM_PREVIEW_FEE_ZAT);
-        let changed_preview: serde_json::Value = serde_json::from_str(
-            &wallet
-                .stage_send_json(&format!(r#"[{{"address":"{address}","amount":2}}]"#))
-                .await
-                .unwrap(),
-        )
-        .unwrap();
-        assert_eq!(changed_preview["fee"], MINIMUM_PREVIEW_FEE_ZAT);
-        wallet.discard_staged_send();
         assert!(matches!(
             wallet.confirm_send_json().await,
             Err(AdapterError::NoStagedSend)
@@ -1357,6 +2017,70 @@ mod tests {
         assert_eq!(restored.0.network(), MobileNetwork::Regtest);
     }
 
+    #[tokio::test]
+    #[ignore = "requires the local Wcash Regtest indexer on 127.0.0.1:48234"]
+    async fn rejected_restore_preserves_existing_database_and_sidecars() {
+        let endpoint = "http://127.0.0.1:48234";
+        let directory = tempfile::tempdir().unwrap();
+        let wallet_path = directory.path().join("wcash-wallet.sqlite");
+        let (mut wallet, _) =
+            WcashMobileAdapter::create_new(endpoint, &wallet_path, MobileNetwork::Regtest)
+                .await
+                .unwrap();
+        wallet.prepare_sync();
+        wallet.synchronize().await.unwrap();
+        let valid = wallet.save_wallet_bytes().unwrap();
+        drop(wallet);
+        let decoded = DecodedWallet::decode(&valid).unwrap();
+
+        let wal = PathBuf::from(format!("{}-wal", wallet_path.display()));
+        let shm = PathBuf::from(format!("{}-shm", wallet_path.display()));
+        fs::write(&wal, b"sentinel-wal").unwrap();
+        fs::write(&shm, b"sentinel-shm").unwrap();
+        let before = [
+            fs::read(&wallet_path).unwrap(),
+            fs::read(&wal).unwrap(),
+            fs::read(&shm).unwrap(),
+        ];
+
+        let mismatched_seed =
+            encode_wallet(decoded.network, decoded.birthday, PHRASE, &decoded.database).unwrap();
+        assert!(matches!(
+            WcashMobileAdapter::open_wallet_bytes(
+                &mismatched_seed,
+                endpoint,
+                &wallet_path,
+                MobileNetwork::Regtest,
+            )
+            .await,
+            Err(AdapterError::InvalidWalletBytes(_))
+        ));
+        assert_eq!(fs::read(&wallet_path).unwrap(), before[0]);
+        assert_eq!(fs::read(&wal).unwrap(), before[1]);
+        assert_eq!(fs::read(&shm).unwrap(), before[2]);
+
+        let wrong_birthday = encode_wallet(
+            decoded.network,
+            decoded.birthday.saturating_add(1),
+            &decoded.seed_phrase,
+            &decoded.database,
+        )
+        .unwrap();
+        assert!(matches!(
+            WcashMobileAdapter::open_wallet_bytes(
+                &wrong_birthday,
+                endpoint,
+                &wallet_path,
+                MobileNetwork::Regtest,
+            )
+            .await,
+            Err(AdapterError::InvalidWalletBytes(_))
+        ));
+        assert_eq!(fs::read(&wallet_path).unwrap(), before[0]);
+        assert_eq!(fs::read(&wal).unwrap(), before[1]);
+        assert_eq!(fs::read(&shm).unwrap(), before[2]);
+    }
+
     #[test]
     fn wallet_envelope_round_trips_and_matches_native_plain_wallet_probe() {
         let database = b"SQLite format 3\0reviewed Wcash test database";
@@ -1385,6 +2109,125 @@ mod tests {
         let mut encoded = encode_wallet(MobileNetwork::Testnet, 1, PHRASE, b"database").unwrap();
         encoded.push(0);
         assert!(validate_wallet_bytes(&encoded).is_err());
+    }
+
+    #[test]
+    fn failed_database_install_restores_main_wal_and_shm_byte_for_byte() {
+        let directory = tempfile::tempdir().unwrap();
+        let destination = directory.path().join("wcash-wallet.sqlite");
+        let wal = PathBuf::from(format!("{}-wal", destination.display()));
+        let shm = PathBuf::from(format!("{}-shm", destination.display()));
+        fs::write(&destination, b"original-main").unwrap();
+        fs::write(&wal, b"original-wal").unwrap();
+        fs::write(&shm, b"original-shm").unwrap();
+        let validated = directory.path().join("validated.sqlite");
+        fs::write(&validated, b"replacement-main").unwrap();
+
+        let mut install = DatabaseInstall::begin(&validated, &destination).unwrap();
+        fs::write(&wal, b"replacement-wal").unwrap();
+        fs::write(&shm, b"replacement-shm").unwrap();
+        install.rollback().unwrap();
+
+        assert_eq!(fs::read(destination).unwrap(), b"original-main");
+        assert_eq!(fs::read(wal).unwrap(), b"original-wal");
+        assert_eq!(fs::read(shm).unwrap(), b"original-shm");
+    }
+
+    #[test]
+    fn rollback_retries_only_unrestored_database_parts() {
+        let directory = tempfile::tempdir().unwrap();
+        let destination = directory.path().join("wcash-wallet.sqlite");
+        let wal = PathBuf::from(format!("{}-wal", destination.display()));
+        let shm = PathBuf::from(format!("{}-shm", destination.display()));
+        fs::write(&destination, b"original-main").unwrap();
+        fs::write(&wal, b"original-wal").unwrap();
+        fs::write(&shm, b"original-shm").unwrap();
+        let validated = directory.path().join("validated.sqlite");
+        fs::write(&validated, b"replacement-main").unwrap();
+
+        let mut install = DatabaseInstall::begin(&validated, &destination).unwrap();
+        fs::create_dir(&wal).unwrap();
+        assert!(install.rollback().is_err());
+        assert_eq!(fs::read(&destination).unwrap(), b"original-main");
+        assert_eq!(fs::read(&shm).unwrap(), b"original-shm");
+
+        fs::remove_dir(&wal).unwrap();
+        install.rollback().unwrap();
+        assert_eq!(fs::read(destination).unwrap(), b"original-main");
+        assert_eq!(fs::read(wal).unwrap(), b"original-wal");
+        assert_eq!(fs::read(shm).unwrap(), b"original-shm");
+    }
+
+    #[test]
+    fn persistent_rollback_failure_retains_the_only_backup_after_drop() {
+        let directory = tempfile::tempdir().unwrap();
+        let destination = directory.path().join("wcash-wallet.sqlite");
+        let wal = PathBuf::from(format!("{}-wal", destination.display()));
+        let shm = PathBuf::from(format!("{}-shm", destination.display()));
+        fs::write(&destination, b"original-main").unwrap();
+        fs::write(&wal, b"original-wal").unwrap();
+        fs::write(&shm, b"original-shm").unwrap();
+        let validated = directory.path().join("validated.sqlite");
+        fs::write(&validated, b"replacement-main").unwrap();
+
+        let mut install = DatabaseInstall::begin(&validated, &destination).unwrap();
+        let rollback_directory = install.rollback_directory.clone();
+        fs::create_dir(&wal).unwrap();
+        assert!(install.rollback().is_err());
+        drop(install);
+
+        assert_eq!(fs::read(&destination).unwrap(), b"original-main");
+        assert_eq!(fs::read(&shm).unwrap(), b"original-shm");
+        assert_eq!(
+            fs::read(rollback_directory.join("original-1")).unwrap(),
+            b"original-wal"
+        );
+
+        fs::remove_dir(&wal).unwrap();
+        fs::rename(rollback_directory.join("original-1"), &wal).unwrap();
+        fs::remove_dir_all(rollback_directory).unwrap();
+        assert_eq!(fs::read(wal).unwrap(), b"original-wal");
+    }
+
+    #[test]
+    fn install_start_failure_restores_existing_database_parts() {
+        let directory = tempfile::tempdir().unwrap();
+        let destination = directory.path().join("wcash-wallet.sqlite");
+        let wal = PathBuf::from(format!("{}-wal", destination.display()));
+        let shm = PathBuf::from(format!("{}-shm", destination.display()));
+        fs::write(&destination, b"original-main").unwrap();
+        fs::write(&wal, b"original-wal").unwrap();
+        fs::write(&shm, b"original-shm").unwrap();
+
+        assert!(
+            DatabaseInstall::begin(&directory.path().join("missing.sqlite"), &destination).is_err()
+        );
+        assert_eq!(fs::read(destination).unwrap(), b"original-main");
+        assert_eq!(fs::read(wal).unwrap(), b"original-wal");
+        assert_eq!(fs::read(shm).unwrap(), b"original-shm");
+    }
+
+    #[test]
+    fn accepted_broadcast_is_success_and_blocks_replacement_after_local_write_failure() {
+        let pending = PendingTransaction {
+            request: PendingRequest::Shield,
+            fee_zat: 10_000,
+            value_to_shield_zat: Some(90_000),
+            staged: None,
+            calculated: None,
+        };
+        let mut slot = None;
+        let txid = "ab".repeat(32);
+        let response = accepted_broadcast_result(
+            &mut slot,
+            pending,
+            txid.clone(),
+            Err(AdapterError::Core("injected checkpoint failure".to_owned())),
+        )
+        .unwrap();
+        let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+        assert_eq!(response["txids"][0], txid);
+        assert!(slot.is_some(), "accepted send must keep its retry blocker");
     }
 
     #[test]
@@ -1431,58 +2274,91 @@ mod tests {
     }
 
     #[test]
-    fn balance_mapping_keeps_confirmed_locked_value_and_pending_value_separate() {
-        let summary = WalletBalanceSummary {
-            chain_tip_height: 50,
-            fully_scanned_height: 50,
-            synchronized: true,
-            accounts: vec![AccountBalanceSummary {
-                account_id: "0".to_owned(),
-                ironwood_total_zat: 100,
-                ironwood_spendable_zat: 60,
-                ironwood_locked_zat: 10,
-                ironwood_pending_change_zat: 20,
-                ironwood_pending_spendability_zat: 10,
-                sapling_total_zat: 0,
-                orchard_total_zat: 0,
-                transparent_total_zat: 80,
-                transparent_coinbase_total_zat: 80,
-                transparent_coinbase_spendable_zat: 50,
-                transparent_coinbase_pending_zat: 30,
-                transparent_regular_total_zat: 0,
-            }],
-        };
-        let mapped = mobile_balance(&summary);
-        assert_eq!(mapped.total_ironwood_balance, 100);
-        assert_eq!(mapped.confirmed_ironwood_balance, 70);
-        assert_eq!(mapped.unconfirmed_ironwood_balance, 30);
-        assert_eq!(mapped.confirmed_transparent_balance, 50);
-        assert_eq!(mapped.unconfirmed_transparent_balance, 30);
-    }
-
-    #[test]
-    fn history_mapping_uses_existing_mobile_kinds_and_ironwood_pool_name() {
-        let history = ConfirmedTransactionHistory {
+    fn metadata_less_history_uses_core_display_values_for_send_and_shield() {
+        let history = ConfirmedTransactionSummaryHistory {
             exact_tip: BlockRef {
                 height: 20,
                 hash: [0; 32],
             },
-            transactions: vec![ConfirmedTransaction {
-                txid: "11".repeat(32),
-                mined_height: 19,
-                direction: ConfirmedTransactionDirection::Outgoing,
-                kind: ConfirmedTransactionKind::Transfer,
-                amount_delta_zat: -42,
-                fee_zat: Some(10_000),
-                timestamp: Some(1_700_000_000),
-                confirmations: 2,
-            }],
+            transactions: vec![
+                ConfirmedTransactionSummary {
+                    transaction: wcash_wallet::ConfirmedTransaction {
+                        txid: "11".repeat(32),
+                        mined_height: 19,
+                        direction: ConfirmedTransactionDirection::Outgoing,
+                        kind: ConfirmedTransactionKind::Transfer,
+                        amount_delta_zat: -52,
+                        fee_zat: Some(10),
+                        timestamp: Some(1_700_000_000),
+                        confirmations: 2,
+                    },
+                    value_zat: Some(42),
+                },
+                ConfirmedTransactionSummary {
+                    transaction: wcash_wallet::ConfirmedTransaction {
+                        txid: "22".repeat(32),
+                        mined_height: 18,
+                        direction: ConfirmedTransactionDirection::Internal,
+                        kind: ConfirmedTransactionKind::Shielding,
+                        amount_delta_zat: -10,
+                        fee_zat: Some(10),
+                        timestamp: Some(1_700_000_001),
+                        confirmations: 3,
+                    },
+                    value_zat: Some(625_000_000),
+                },
+                ConfirmedTransactionSummary {
+                    transaction: wcash_wallet::ConfirmedTransaction {
+                        txid: "33".repeat(32),
+                        mined_height: 17,
+                        direction: ConfirmedTransactionDirection::Outgoing,
+                        kind: ConfirmedTransactionKind::Transfer,
+                        amount_delta_zat: -10_000,
+                        fee_zat: Some(10_000),
+                        timestamp: Some(1_700_000_002),
+                        confirmations: 4,
+                    },
+                    value_zat: None,
+                },
+            ],
         };
-        let mapped = mobile_history(history);
-        assert_eq!(mapped.total, 1);
+        let mut mapped = mobile_history(history);
+        assert_eq!(mapped.total, 3);
         assert_eq!(mapped.value_transfers[0].kind, "sent");
         assert_eq!(mapped.value_transfers[0].value, 42);
         assert_eq!(mapped.value_transfers[0].pools_sent_from, vec!["Ironwood"]);
         assert!(mapped.value_transfers[0].pools_received.is_empty());
+        assert_eq!(mapped.value_transfers[1].kind, "shield");
+        assert_eq!(mapped.value_transfers[1].value, 625_000_000);
+        assert_eq!(
+            mapped.value_transfers[1].pools_sent_from,
+            vec!["Transparent"]
+        );
+        assert_eq!(mapped.value_transfers[1].pools_received, vec!["Ironwood"]);
+        assert_eq!(mapped.value_transfers[2].kind, "unknown");
+        assert_eq!(mapped.value_transfers[2].value, 0);
+        assert_eq!(mapped.value_transfers[2].transaction_fee, None);
+        assert!(mapped.value_transfers[2].pools_sent_from.is_empty());
+        assert!(mapped.value_transfers[2].pools_received.is_empty());
+
+        let shield = PendingMetadata {
+            txid: "11".repeat(32),
+            kind: "shield".to_owned(),
+            value_zat: 625_000_000,
+            fee_zat: 15_000,
+            state: "transmitted".to_owned(),
+            recipient_address: None,
+            created_at: 1_700_000_000,
+        };
+        shield
+            .apply_to_confirmed(&mut mapped.value_transfers[2])
+            .unwrap();
+        assert_eq!(mapped.value_transfers[2].kind, "shield");
+        assert_eq!(mapped.value_transfers[2].value, 625_000_000);
+        assert_eq!(
+            mapped.value_transfers[2].pools_sent_from,
+            vec!["Transparent"]
+        );
+        assert_eq!(mapped.value_transfers[2].pools_received, vec!["Ironwood"]);
     }
 }

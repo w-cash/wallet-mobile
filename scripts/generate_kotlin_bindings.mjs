@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Generates the Android Kotlin UniFFI bindings for the wallet (rust/lib) and
-// the Nym proxy shim (rust/nym-proxy-ffi) into
+// Generates the Android Kotlin UniFFI bindings for the Wcash wallet boundary
+// (rust/wcash-mobile-ffi) and the Nym proxy shim (rust/nym-proxy-ffi) into
 // android/app/build/generated/source/uniffi/<variant>/java, the source dir
 // the app module compiles. Neither binding is checked in.
 //
@@ -25,11 +25,29 @@ const SHIM_DIR = join(RUST_DIR, 'nym-proxy-ffi');
 // Wcash builds generate the same `uniffi.zingo` package from the additive
 // adapter UDL. The upstream UDL remains untouched for parity auditing.
 const UDL = join(RUST_DIR, 'wcash-mobile-ffi', 'src', 'zingo.udl');
-const OUT_ROOT = join(REPO_DIR, 'android', 'app', 'build', 'generated', 'source', 'uniffi');
+const OUT_ROOT = join(
+  REPO_DIR,
+  'android',
+  'app',
+  'build',
+  'generated',
+  'source',
+  'uniffi',
+);
 
 const exe = process.platform === 'win32' ? '.exe' : '';
-const WALLET_BINDGEN = join(RUST_DIR, 'target', 'release', `zingo-wallet-uniffi-bindgen${exe}`);
-const SHIM_BINDGEN = join(RUST_DIR, 'target', 'release', `zingo-uniffi-bindgen${exe}`);
+const WALLET_BINDGEN = join(
+  RUST_DIR,
+  'target',
+  'release',
+  `zingo-wallet-uniffi-bindgen${exe}`,
+);
+const SHIM_BINDGEN = join(
+  RUST_DIR,
+  'target',
+  'release',
+  `zingo-uniffi-bindgen${exe}`,
+);
 
 function parseArgs(argv) {
   let variants = ['release'];
@@ -73,12 +91,20 @@ function hostShimLibrary() {
 const { variants, shimLibrary } = parseArgs(process.argv.slice(2));
 
 console.log('=== Building the bindgen binaries ===');
-run('cargo', ['build', '--release', '--locked', '--package', 'zingo-uniffi-bindgen'], RUST_DIR);
+run(
+  'cargo',
+  ['build', '--release', '--locked', '--package', 'zingo-uniffi-bindgen'],
+  RUST_DIR,
+);
 
 let shimLib = shimLibrary;
 if (shimLib === undefined) {
   console.log('=== Building the Nym proxy shim for the host ===');
-  run('cargo', ['build', '--locked', '--package', 'zingo-nym-proxy-ffi'], SHIM_DIR);
+  run(
+    'cargo',
+    ['build', '--locked', '--package', 'zingo-nym-proxy-ffi'],
+    SHIM_DIR,
+  );
   shimLib = hostShimLibrary();
 }
 if (!existsSync(shimLib)) {
@@ -92,7 +118,15 @@ for (const variant of variants) {
   console.log(`=== Kotlin bindings (${variant}) ===`);
   run(
     WALLET_BINDGEN,
-    ['generate', UDL, '--language', 'kotlin', '--no-format', '--out-dir', outDir],
+    [
+      'generate',
+      UDL,
+      '--language',
+      'kotlin',
+      '--no-format',
+      '--out-dir',
+      outDir,
+    ],
     RUST_DIR,
   );
   // Library mode resolves the crate through `cargo metadata` in the shim's

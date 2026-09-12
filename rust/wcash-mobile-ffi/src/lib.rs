@@ -96,7 +96,7 @@ fn map_adapter(error: AdapterError) -> ZingolibError {
         | AdapterError::InvalidSeed
         | AdapterError::InvalidWalletBytes(_)
         | AdapterError::Json(_) => ZingolibError::InvalidInput(message),
-        AdapterError::Io(_) => ZingolibError::Save(message),
+        AdapterError::Io(_) | AdapterError::Database(_) => ZingolibError::Save(message),
         AdapterError::SendAlreadyStaged | AdapterError::NoStagedSend => {
             ZingolibError::Send(message)
         }
@@ -273,17 +273,25 @@ pub fn init_from_bytes(
         min_confirmations,
     )?;
     let path = configured_wallet_path()?;
-    *SESSION
+    let previous = SESSION
         .lock()
-        .map_err(|_| ZingolibError::LightclientLockPoisoned)? = None;
-    let adapter = RT
-        .block_on(WcashMobileAdapter::open_wallet_bytes(
-            &wallet_bytes,
-            &server_uri,
-            &path,
-            network,
-        ))
-        .map_err(map_adapter)?;
+        .map_err(|_| ZingolibError::LightclientLockPoisoned)?
+        .take();
+    let opened = RT.block_on(WcashMobileAdapter::open_wallet_bytes(
+        &wallet_bytes,
+        &server_uri,
+        &path,
+        network,
+    ));
+    let adapter = match opened {
+        Ok(adapter) => adapter,
+        Err(error) => {
+            *SESSION
+                .lock()
+                .map_err(|_| ZingolibError::LightclientLockPoisoned)? = previous;
+            return Err(map_adapter(error));
+        }
+    };
     let recovery = adapter.recovery_json().map_err(map_adapter)?;
     *SESSION
         .lock()
@@ -636,7 +644,13 @@ pub fn send(send_json: String) -> Result<String, ZingolibError> {
 }
 
 pub fn shield() -> Result<String, ZingolibError> {
-    Err(unsupported("transparent coinbase shielding preview"))
+    let mut session = SESSION
+        .lock()
+        .map_err(|_| ZingolibError::LightclientLockPoisoned)?;
+    let adapter = session
+        .as_mut()
+        .ok_or(ZingolibError::LightclientNotInitialized)?;
+    adapter.stage_shield_json().map_err(map_adapter)
 }
 
 pub fn confirm() -> Result<String, ZingolibError> {
@@ -782,20 +796,15 @@ mod tests {
 
         let poll = wait_for_sync(std::time::Duration::from_secs(20));
         assert!(poll["sync_complete"]["sync_end_height"].is_number());
-        assert!(serde_json::from_str::<serde_json::Value>(&status_sync().unwrap()).is_ok());
+        let status: serde_json::Value = serde_json::from_str(&status_sync().unwrap()).unwrap();
+        assert_eq!(status["scan_ranges"][0]["priority"], "Scanned");
         assert!(serde_json::from_str::<serde_json::Value>(&get_balance().unwrap()).is_ok());
         let addresses: serde_json::Value =
             serde_json::from_str(&get_unified_addresses().unwrap()).unwrap();
         let address = addresses[0]["encoded_address"].as_str().unwrap();
         assert!(serde_json::from_str::<serde_json::Value>(&get_value_transfers().unwrap()).is_ok());
 
-        let bytes_before_preview = save_wallet_bytes().unwrap().unwrap();
-        let preview: serde_json::Value = serde_json::from_str(
-            &send(format!(r#"[{{"address":"{address}","amount":1}}]"#)).unwrap(),
-        )
-        .unwrap();
-        assert_eq!(preview["fee"], 10_000);
-        assert_eq!(save_wallet_bytes().unwrap().unwrap(), bytes_before_preview);
+        assert!(parse_address(address.to_owned()).is_ok());
 
         let bytes = save_wallet_bytes().unwrap().unwrap();
         validate_wallet_bytes(bytes.clone()).unwrap();
@@ -806,7 +815,7 @@ mod tests {
 
     #[test]
     #[ignore = "requires a funded disposable seed plus the local Wcash Regtest miner/indexer"]
-    fn local_regtest_funded_send_mine_sync_and_reopen_through_ffi() {
+    fn local_regtest_funded_shield_send_mine_sync_and_reopen_through_ffi() {
         let endpoint = "http://127.0.0.1:48234";
         let funded_seed = std::env::var("WCASH_MOBILE_FUNDED_TEST_SEED")
             .expect("WCASH_MOBILE_FUNDED_TEST_SEED must contain the disposable Regtest phrase");
@@ -821,6 +830,30 @@ mod tests {
         let zcash_payout =
             std::env::var("ZCASH_PAYOUT_ADDRESS").expect("ZCASH_PAYOUT_ADDRESS is required");
         let fixture = tempfile::tempdir().unwrap();
+        let mine_block = |journal_name: &str| {
+            let output = std::process::Command::new(&miner)
+                .args([
+                    "native-mine",
+                    "http://127.0.0.1:48232",
+                    "http://127.0.0.1:18232",
+                    "http://127.0.0.1:18242",
+                    "-",
+                    "256",
+                    "0",
+                ])
+                .env("WCASH_EXPECTED_GENESIS_HASH", &wcash_genesis)
+                .env("ZCASH_EXPECTED_GENESIS_HASH", &zcash_genesis)
+                .env("ZCASH_NETWORK", "regtest")
+                .env("WCASH_SHARE_JOURNAL", fixture.path().join(journal_name))
+                .env("WCASH_PAYOUT_ADDRESS", &wcash_payout)
+                .env("ZCASH_PAYOUT_ADDRESS", &zcash_payout)
+                .output()
+                .expect("the Regtest merge miner must launch");
+            assert!(
+                output.status.success(),
+                "the Regtest merge miner must submit the confirmation block"
+            );
+        };
 
         // Exercise the native create path and obtain a real active-network
         // Ironwood recipient without bypassing the mobile boundary.
@@ -858,6 +891,73 @@ mod tests {
         .unwrap();
         run_sync().unwrap();
         wait_for_sync(std::time::Duration::from_secs(60));
+        let balance: serde_json::Value = serde_json::from_str(&get_balance().unwrap()).unwrap();
+        assert!(
+            balance["confirmed_transparent_balance"]
+                .as_u64()
+                .is_some_and(|value| value > 10_000),
+            "the disposable Regtest fixture must contain mature transparent coinbase funds"
+        );
+
+        // The upstream mining-receiver control remains visible, so its exact
+        // shield preview, confirmation, restart persistence, and mined history
+        // transition are part of the mobile boundary gate.
+        let shield_preview: serde_json::Value =
+            serde_json::from_str(&shield().expect("mature coinbase must stage")).unwrap();
+        assert!(shield_preview["fee"].as_u64().is_some_and(|fee| fee > 0));
+        assert!(
+            shield_preview["value_to_shield"]
+                .as_u64()
+                .is_some_and(|value| value > shield_preview["fee"].as_u64().unwrap())
+        );
+        let repeated_shield: serde_json::Value =
+            serde_json::from_str(&shield().expect("identical shield preview must be stable"))
+                .unwrap();
+        assert_eq!(repeated_shield, shield_preview);
+        let shield_result: serde_json::Value =
+            serde_json::from_str(&confirm().expect("exact shield proposal must broadcast"))
+                .unwrap();
+        let shield_txid = shield_result["txids"][0].as_str().unwrap().to_owned();
+        assert_eq!(shield_txid.len(), 64);
+
+        let shield_bytes = save_wallet_bytes().unwrap().unwrap();
+        let shield_restart_directory = fixture.path().join("restarted-shield");
+        set_wallet_directory(shield_restart_directory.to_string_lossy().into_owned()).unwrap();
+        init_from_bytes(
+            shield_bytes,
+            endpoint.to_owned(),
+            "regtest".to_owned(),
+            "Medium".to_owned(),
+            1,
+        )
+        .unwrap();
+        let pending_shield_history: serde_json::Value =
+            serde_json::from_str(&get_value_transfers().unwrap()).unwrap();
+        assert!(
+            pending_shield_history["value_transfers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|row| row["txid"] == shield_txid && row["kind"] == "shield")
+        );
+        mine_block("shield-share-journal.jsonl");
+        run_sync().unwrap();
+        wait_for_sync(std::time::Duration::from_secs(60));
+        let confirmed_shield_history: serde_json::Value =
+            serde_json::from_str(&get_value_transfers().unwrap()).unwrap();
+        assert!(
+            confirmed_shield_history["value_transfers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|row| {
+                    row["txid"] == shield_txid
+                        && row["kind"] == "shield"
+                        && row["status"] == "confirmed"
+                }),
+            "shield history did not transition to confirmed: {confirmed_shield_history}"
+        );
+
         let spendable: serde_json::Value =
             serde_json::from_str(&get_spendable_balance_total().unwrap()).unwrap();
         assert!(
@@ -866,7 +966,6 @@ mod tests {
         );
 
         let payment = format!(r#"[{{"address":"{recipient}","amount":100000}}]"#);
-        let bytes_before_preview = save_wallet_bytes().unwrap().unwrap();
         let first_preview: serde_json::Value =
             serde_json::from_str(&send(payment.clone()).unwrap()).unwrap();
         assert!(
@@ -874,58 +973,56 @@ mod tests {
                 .as_u64()
                 .is_some_and(|fee| fee >= 10_000)
         );
-        assert_eq!(
-            save_wallet_bytes().unwrap().unwrap(),
-            bytes_before_preview,
-            "previewing a send must not mutate the wallet"
-        );
+        let repeated_preview: serde_json::Value =
+            serde_json::from_str(&send(payment).unwrap()).unwrap();
+        assert_eq!(repeated_preview["fee"], first_preview["fee"]);
 
-        // A first confirmation may learn a higher exact fee. In that case the
-        // adapter deliberately fails closed until the unchanged UI previews
-        // that exact signed fee and asks for consent again.
-        let confirmed = match confirm() {
-            Ok(value) => value,
-            Err(error) if error.to_string().contains("exact signed fee differs") => {
-                let exact_preview: serde_json::Value =
-                    serde_json::from_str(&send(payment).unwrap()).unwrap();
-                assert!(
-                    exact_preview["fee"].as_u64().unwrap()
-                        >= first_preview["fee"].as_u64().unwrap()
-                );
-                confirm().unwrap()
-            }
-            Err(error) => panic!("mobile confirmation failed: {error}"),
-        };
+        let confirmed = confirm().expect("exact consented proposal must broadcast");
         let confirmed: serde_json::Value = serde_json::from_str(&confirmed).unwrap();
         let txid = confirmed["txids"][0].as_str().unwrap().to_owned();
         assert_eq!(txid.len(), 64);
 
+        let pending_history: serde_json::Value =
+            serde_json::from_str(&get_value_transfers().unwrap()).unwrap();
+        assert!(
+            pending_history["value_transfers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|row| {
+                    row["txid"] == txid
+                        && matches!(row["status"].as_str(), Some("transmitted" | "calculated"))
+                })
+        );
+
+        // Simulate an immediate process restart from the exact mobile export
+        // before a block is mined. The signed transaction and its pending
+        // history projection must survive without constructing a replacement.
+        let wallet_bytes = save_wallet_bytes().unwrap().unwrap();
+        let restarted_directory = fixture.path().join("restarted");
+        set_wallet_directory(restarted_directory.to_string_lossy().into_owned()).unwrap();
+        init_from_bytes(
+            wallet_bytes,
+            endpoint.to_owned(),
+            "regtest".to_owned(),
+            "Medium".to_owned(),
+            1,
+        )
+        .unwrap();
+        let restarted_history: serde_json::Value =
+            serde_json::from_str(&get_value_transfers().unwrap()).unwrap();
+        assert!(
+            restarted_history["value_transfers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|row| row["txid"] == txid && row["status"] != "confirmed")
+        );
+
         // Confirm the broadcast through consensus by mining a merged block.
         // The seed stays in this process environment and is never passed to
         // the miner, its output, or the repository.
-        let journal = fixture.path().join("share-journal.jsonl");
-        let output = std::process::Command::new(miner)
-            .args([
-                "native-mine",
-                "http://127.0.0.1:48232",
-                "http://127.0.0.1:18232",
-                "http://127.0.0.1:18242",
-                "-",
-                "256",
-                "0",
-            ])
-            .env("WCASH_EXPECTED_GENESIS_HASH", wcash_genesis)
-            .env("ZCASH_EXPECTED_GENESIS_HASH", zcash_genesis)
-            .env("ZCASH_NETWORK", "regtest")
-            .env("WCASH_SHARE_JOURNAL", journal)
-            .env("WCASH_PAYOUT_ADDRESS", wcash_payout)
-            .env("ZCASH_PAYOUT_ADDRESS", zcash_payout)
-            .output()
-            .expect("the Regtest merge miner must launch");
-        assert!(
-            output.status.success(),
-            "the Regtest merge miner must submit the confirmation block"
-        );
+        mine_block("send-share-journal.jsonl");
 
         run_sync().unwrap();
         wait_for_sync(std::time::Duration::from_secs(60));
@@ -944,7 +1041,7 @@ mod tests {
         // survives the same wallet-byte lifecycle used by the native apps.
         let wallet_bytes = save_wallet_bytes().unwrap().unwrap();
         validate_wallet_bytes(wallet_bytes.clone()).unwrap();
-        let reopened_directory = fixture.path().join("reopened");
+        let reopened_directory = fixture.path().join("reopened-confirmed");
         set_wallet_directory(reopened_directory.to_string_lossy().into_owned()).unwrap();
         init_from_bytes(
             wallet_bytes,

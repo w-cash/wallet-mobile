@@ -1,4 +1,4 @@
-name: Build
+name: Wcash iOS native build
 
 on:
   workflow_call:
@@ -16,7 +16,6 @@ on:
 
 env:
   CACHE-KEY: ${{ inputs.cache-key }}
-  REPO-OWNER: ${{ github.repository_owner }}
 
 jobs:
   ios-check-build-cache:
@@ -26,14 +25,20 @@ jobs:
     outputs:
       ios-cache-found: ${{ steps.ios-set-cache-found.outputs.ios-cache-found }}
     steps:
-      - name: Set envs for zingolib CI
-        if: ${{ contains(github.repository, 'zingolib') }}
-        run: echo "REPO-OWNER=zingolabs" >> $GITHUB_ENV
-
       - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          repository: ${{ env.REPO-OWNER }}/zingo-mobile
+
+      - name: Verify immutable Wcash dependency graph
+        run: |
+          set -eu
+          if grep -nE 'path[[:space:]]*=[[:space:]]*"/' rust/Cargo.toml; then
+            echo 'absolute local Rust dependencies block every native cache and candidate build' >&2
+            exit 1
+          fi
+          test "$(grep -c '^name = "wcash-wallet"$' rust/Cargo.lock)" -eq 1
+          ! grep -q '5b4e29980eb45e84ddab9024f530c923986d7e1e' rust/Cargo.lock
+          cargo tree --locked --manifest-path rust/Cargo.toml \
+            --package wcash-mobile-ffi --invert wcash-wallet
 
       - name: Check if iOS xcframework cache exists
         id: ios-check-build-cache
@@ -44,58 +49,33 @@ jobs:
             ios/zingo.swift
             ios/ZingoNymProxyFFI.xcframework
             ios/zingo_nym_proxy_ffi.swift
-          key: native-ios-xcframework-${{ env.CACHE-KEY }}
+          key: wcash-ios-xcframework-${{ env.CACHE-KEY }}
           lookup-only: true
+
+      - name: Verify cached Wcash-only boundary
+        if: ${{ steps.ios-check-build-cache.outputs.cache-hit == 'true' }}
+        run: |
+          set -eu
+          grep -q 'setWalletDirectory' ios/zingo.swift
+          find ios/Zingolib.xcframework -type f -perm -111 -print0 \
+            | xargs -0 strings | grep -q 'set_wallet_directory'
 
       - name: Set cache-found
         id: ios-set-cache-found
         run: echo "ios-cache-found=${{ steps.ios-check-build-cache.outputs.cache-hit }}" >> $GITHUB_OUTPUT
 
   ios-build:
-    name: Build iOS Rust xcframework
+    name: Build Wcash iOS Rust xcframework
     needs: ios-check-build-cache
     if: ${{ needs.ios-check-build-cache.outputs.ios-cache-found != 'true' }}
     continue-on-error: ${{ inputs.advisory }}
-    runs-on: zingo-ios-build-12
+    runs-on: macos-15
     env:
       RUSTUP_HOME: ${{ github.workspace }}/.rustup
       CARGO_HOME:  ${{ github.workspace }}/.cargo
     steps:
-      - name: Set envs for zingolib CI
-        if: ${{ contains(github.repository, 'zingolib') }}
-        run: echo "REPO-OWNER=zingolabs" >> $GITHUB_ENV
-
       - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          repository: ${{ env.REPO-OWNER }}/zingo-mobile
-
-      - name: Cargo update for zingolib CI
-        if: ${{ contains(github.repository, 'zingolib') }}
-        run: |
-          set -euo pipefail
-
-          TOML="rust/Cargo.toml"
-          REV="${GITHUB_SHA}"
-          PINS='^(zingolib|pepper-sync|zingolib_testutils|zingo-price)[[:space:]]*='
-
-          sed -i '' -E \
-            "/${PINS}/ s/rev[[:space:]]*=[[:space:]]*\"[^\"]*\"/rev = \"${REV}\"/" \
-            "$TOML"
-
-          sed -i '' -E \
-            "/${PINS}/ s/(branch|tag)[[:space:]]*=[[:space:]]*\"[^\"]*\"/rev = \"${REV}\"/" \
-            "$TOML"
-
-          pinned="$(grep -E "$PINS" "$TOML")"
-          echo "zingolib pins =>"
-          echo "$pinned"
-          test "$(echo "$pinned" | wc -l)" -eq "$(echo "$pinned" | grep -c "rev = \"${REV}\"")"
-          ! echo "$pinned" | grep -qE '\b(branch|tag)[[:space:]]*='
-
-          cd rust
-          rustup default stable
-          cargo update -p zingolib -p regchest_utils --aggressive
 
       - name: Cargo default stable
         run: |
@@ -162,10 +142,25 @@ jobs:
       - name: Build iOS Rust xcframework
         run: node rust/ios/build_ios.mjs
 
+      - name: Verify Wcash-only boundary and native identity
+        run: |
+          set -eu
+          grep -q "'--package', 'wcash-mobile-ffi'" rust/ios/build_ios.mjs
+          ! grep -q "'--package', 'zingo-lib'" rust/ios/build_ios.mjs
+          grep -q 'setWalletDirectory(directory:' ios/RPCModule.swift
+          grep -q 'PRODUCT_BUNDLE_IDENTIFIER = com.wcashwallet.wallet;' \
+            ios/Zingo.xcodeproj/project.pbxproj
+          grep -q 'INFOPLIST_KEY_CFBundleDisplayName = "Wcash Wallet";' \
+            ios/Zingo.xcodeproj/project.pbxproj
+          grep -q '<string>wcash</string>' ios/Zingo/Info.plist
+          grep -q 'setWalletDirectory' ios/zingo.swift
+          find ios/Zingolib.xcframework -type f -perm -111 -print0 \
+            | xargs -0 strings | grep -q 'set_wallet_directory'
+
       - name: Upload xcframework artifact
         uses: actions/upload-artifact@v7
         with:
-          name: native-ios-xcframework-${{ env.CACHE-KEY }}
+          name: wcash-ios-xcframework-${{ env.CACHE-KEY }}
           path: |
             ios/Zingolib.xcframework
             ios/zingo.swift
@@ -174,24 +169,18 @@ jobs:
           retention-days: 3
 
   cache-native-ios-uniffi:
-    name: Cache iOS xcframework
+    name: Cache Wcash iOS xcframework
     needs: ios-build
     continue-on-error: ${{ inputs.advisory }}
     runs-on: macos-15
     steps:
-      - name: Set envs for zingolib CI
-        if: ${{ contains(github.repository, 'zingolib') }}
-        run: echo "REPO-OWNER=zingolabs" >> $GITHUB_ENV
-
       - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          repository: ${{ env.REPO-OWNER }}/zingo-mobile
 
       - name: Download xcframework artifact
         uses: actions/download-artifact@v4
         with:
-          name: native-ios-xcframework-${{ env.CACHE-KEY }}
+          name: wcash-ios-xcframework-${{ env.CACHE-KEY }}
           path: ios
 
       - name: Cache xcframework
@@ -202,4 +191,4 @@ jobs:
             ios/zingo.swift
             ios/ZingoNymProxyFFI.xcframework
             ios/zingo_nym_proxy_ffi.swift
-          key: native-ios-xcframework-${{ env.CACHE-KEY }}
+          key: wcash-ios-xcframework-${{ env.CACHE-KEY }}

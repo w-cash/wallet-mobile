@@ -42,8 +42,6 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          repository: ${{ env.REPO-OWNER }}/zingo-mobile
 
       - name: Check if native rust cache exists
         id: native-check-build-cache
@@ -111,8 +109,16 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          repository: ${{ env.REPO-OWNER }}/zingo-mobile
+
+      - name: Verify immutable Wcash dependency graph
+        run: |
+          set -eu
+          if grep -nE 'path[[:space:]]*=[[:space:]]*"/' rust/Cargo.toml; then
+            echo 'absolute local Rust dependencies block native builds' >&2
+            exit 1
+          fi
+          test "$(grep -c '^name = "wcash-wallet"$' rust/Cargo.lock)" -eq 1
+          ! grep -q '5b4e29980eb45e84ddab9024f530c923986d7e1e' rust/Cargo.lock
 
       - name: Cargo update for zingolib CI
         if: ${{ contains(github.repository, 'zingolib') }}
@@ -148,11 +154,12 @@ jobs:
         run: cargo install --force --locked bindgen-cli
 
       - name: Cargo uniffi kotlin
-        working-directory: ./rust/lib
+        working-directory: ./rust
         run: |
-          cargo run --release --features=uniffi/cli --bin uniffi-bindgen \
-          generate ./src/zingo.udl --language kotlin \
-          --out-dir ../../android/app/build/generated/source/uniffi/release/java
+          cargo run --locked --release --package zingo-uniffi-bindgen \
+          --bin zingo-wallet-uniffi-bindgen -- \
+          generate wcash-mobile-ffi/src/zingo.udl --language kotlin --no-format \
+          --out-dir ../android/app/build/generated/source/uniffi/release/java
 
       - name: Set envs for x86_64
         if: ${{ env.ARCH == 'x86_64' }}
@@ -189,12 +196,12 @@ jobs:
       - name: Cargo NDK
         run: cargo install --version 4.0.1 cargo-ndk
 
-      - name: Cargo build
-        working-directory: ./rust/lib
+      - name: Cargo build Wcash-only wallet FFI
+        working-directory: ./rust
         run: |
           cargo ndk \
-          --target ${{ env.TARGET }} build \
-          --release
+          --target ${{ env.TARGET }} build --locked \
+          --release --package wcash-mobile-ffi
         env:
           AR: llvm-ar
           LD: ld
@@ -292,8 +299,6 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          repository: ${{ env.REPO-OWNER }}/zingo-mobile
 
       - name: Download native rust
         uses: actions/download-artifact@v4

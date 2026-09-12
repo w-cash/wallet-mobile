@@ -1,6 +1,8 @@
 package org.ZingoLabs.Zingo
 
 import android.content.Context
+import android.system.Os
+import android.system.OsConstants
 import android.util.Log
 import android.util.Base64
 import androidx.security.crypto.EncryptedFile
@@ -18,12 +20,21 @@ import org.ZingoLabs.Zingo.Constants.*
 
 class RPCModule internal constructor(private val reactContext: ReactApplicationContext?) : ReactContextBaseJavaModule(reactContext) {
     private val applicationContext: Context = reactContext?.applicationContext ?: MainApplication.getAppContext()!!
+    private val walletDatabaseDirectory: File =
+        File(applicationContext.noBackupFilesDir, "wcash-wallet").also { directory ->
+            check(directory.mkdirs() || directory.isDirectory) {
+                "Wcash wallet database directory could not be created"
+            }
+            // Wolf additionally validates this app-owned leaf and, on Android,
+            // stops at the SELinux-enforced application sandbox boundary.
+            Os.chmod(directory.absolutePath, OsConstants.S_IRWXU) // 0700
+        }
 
     init {
         // This call exists only in the Wcash UniFFI crate. It is both the
         // writable SQLite location and a link-time assertion that this app
         // cannot be packaged with the upstream Zcash FFI by mistake.
-        uniffi.zingo.setWalletDirectory(applicationContext.filesDir.absolutePath)
+        uniffi.zingo.setWalletDirectory(walletDatabaseDirectory.absolutePath)
     }
 
     override fun getName(): String {

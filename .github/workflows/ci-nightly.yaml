@@ -1,73 +1,16 @@
-name: CI (Nightly)
+name: Legacy nightly CI disabled
 
 on:
-  schedule:
-    - cron: '30 5 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  jest-test:
-    uses: ./.github/workflows/jest-test.yaml
-    secrets: inherit
-
-  create-timestamp:
-    uses: ./.github/workflows/create-timestamp.yaml
-
-  create-cache-key:
-    uses: ./.github/workflows/create-cache-key.yaml
-
-  android-build:
-    strategy:
-      matrix:
-        arch: [ x86_64, x86, arm64-v8a, armeabi-v7a ]
-      fail-fast: false
-    uses: ./.github/workflows/android-build.yaml
-    needs: create-cache-key
-    with:
-      cache-key: ${{ needs.create-cache-key.outputs.cache-key }}
-      arch: ${{ matrix.arch }}
-
-  android-apk-build:
-    strategy:
-      matrix:
-        abi: [ x86_64, x86 ]
-      fail-fast: false
-    uses: ./.github/workflows/android-apk-build.yaml
-    needs: [create-cache-key, android-build]
-    with:
-      cache-key: ${{ needs.create-cache-key.outputs.cache-key }}
-      abi: ${{ matrix.abi }}
-
-  android-ubuntu-integration-test-ci:
-    strategy:
-      matrix:
-        config:
-          - { abi: x86_64, api-level: 34, target: default }
-          - { abi: x86, api-level: 29, target: default }
-      fail-fast: false
-    uses: ./.github/workflows/android-ubuntu-integration-test-ci.yaml
-    needs: [create-timestamp, create-cache-key, android-apk-build]
-    secrets: inherit
-    with:
-      timestamp: ${{ needs.create-timestamp.outputs.timestamp }}
-      cache-key: ${{ needs.create-cache-key.outputs.cache-key }}
-      abi: ${{ matrix.config.abi }}
-      api-level: ${{ matrix.config['api-level'] }}
-      target: ${{ matrix.config.target }}
-
-  ios-build:
-    strategy:
-      fail-fast: false
-    uses: ./.github/workflows/ios-build.yaml
-    needs: create-cache-key
-    with:
-      cache-key: ${{ needs.create-cache-key.outputs.cache-key }}
-
-  ios-integration-test:
-    strategy:
-      fail-fast: false
-    uses: ./.github/workflows/ios-integration-test.yaml
-    needs: [ create-cache-key, ios-build ]
-    secrets: inherit
-    with:
-      cache-key: ${{ needs.create-cache-key.outputs.cache-key }}
+  disabled:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Await Wcash-native nightly topology
+        run: |
+          echo "The inherited Zingo nightly topology is disabled."
+          exit 1

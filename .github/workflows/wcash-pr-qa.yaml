@@ -22,6 +22,16 @@ jobs:
       - name: Checkout Wcash mobile
         uses: actions/checkout@v7
 
+      - name: Reject unpublished or stale wallet runtime dependencies
+        run: |
+          set -eu
+          if grep -nE 'path[[:space:]]*=[[:space:]]*"/' rust/Cargo.toml; then
+            echo 'absolute local Rust dependencies cannot enter review' >&2
+            exit 1
+          fi
+          test "$(grep -c '^name = "wcash-wallet"$' rust/Cargo.lock)" -eq 1
+          ! grep -q '5b4e29980eb45e84ddab9024f530c923986d7e1e' rust/Cargo.lock
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:

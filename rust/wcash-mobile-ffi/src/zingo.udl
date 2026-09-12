@@ -108,7 +108,7 @@ namespace zingo {
 
   [Throws=ZingolibError]
   string run_sync();
-  
+
   [Throws=ZingolibError]
   string pause_sync();
 
@@ -175,7 +175,7 @@ namespace zingo {
 
   [Throws=ZingolibError]
   string get_spendable_balance_with_address(
-    string address, 
+    string address,
     string zennies
   );
 

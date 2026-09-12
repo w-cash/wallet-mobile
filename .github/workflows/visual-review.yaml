@@ -3,9 +3,8 @@ name: Visual review
 # Builds the PR head, captures it with the web Storybook harness, and diffs
 # it against the committed baseline (visual/__baseline__). The check fails
 # when a story changed, appeared, or disappeared without a baseline update.
-# Accepting is a commit: comment `/visual-accept` on the PR (or run
-# `yarn visual:accept`) to pull this run's capture into the baseline, so the
-# accepted pixels are the runner's own.
+# Accepting is a local commit: run `yarn visual:accept` to pull the capture
+# into the baseline, review it, and commit the accepted pixels.
 
 on:
   pull_request:
@@ -20,7 +19,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 # Cancel a superseded run when the PR gets a new push.
 concurrency:
@@ -88,80 +86,8 @@ jobs:
           name: visual-review
           path: visual/ci
 
-      # Fork PRs can't read secrets, so this fails there (artifact still up).
-      - name: Deploy report to Cloudflare Pages
-        id: deploy
-        if: always()
-        continue-on-error: true
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: >-
-            pages deploy visual/ci
-            --project-name=zingo-visual
-            --branch=pr-${{ github.event.number }}
-
-      # Fork PRs get a read-only token, so commenting will fail there — don't
-      # let that red the run. The artifact is still uploaded.
-      - name: Comment result
-        if: always()
-        continue-on-error: true
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const statusPath = 'visual/ci/status.json';
-            if (!fs.existsSync(statusPath)) return;
-            const { status } = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
-            const changed = status === 'changed';
-            const deployed = '${{ steps.deploy.outcome }}' === 'success';
-            // Stable per-PR alias; always points at this PR's latest deploy.
-            const url = `https://pr-${context.issue.number}.zingo-visual.pages.dev`;
-            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const link = deployed
-              ? `**[Open the review page](${url})** — Current, Animations, and Image diffs tabs.`
-              : `Download the **visual-review** artifact from [this run](${runUrl}) and open \`index.html\`.`;
-            const accept = changed
-              ? [
-                  '',
-                  'If the change is intended, comment `/visual-accept` on this PR. It pulls this run\'s capture into the baseline, commits, and pushes. Needs write access and a finished run for the current commit.',
-                  '',
-                  'Or accept from a terminal on this branch:',
-                  '',
-                  '```',
-                  'yarn visual:accept   # pulls this run\'s capture into visual/__baseline__',
-                  'git add visual/__baseline__ && git commit -m "test(visual): accept <what changed>"',
-                  '```',
-                ]
-              : [];
-            const marker = '<!-- visual-review -->';
-            const body = [
-              marker,
-              `### Visual review — ${changed ? '⚠️ changes detected' : '✅ matches baseline'}`,
-              '',
-              `Head vs \`visual/__baseline__\`. ${link}`,
-              ...accept,
-            ].join('\n');
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner, repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const existing = comments.find(c => c.body.includes(marker));
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner, repo: context.repo.repo,
-                comment_id: existing.id, body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, body,
-              });
-            }
-
       - name: Gate
         if: steps.diff.outcome != 'success'
         run: |
-          echo "Visual changes detected — review the report, then comment '/visual-accept' on the PR (or run 'yarn visual:accept' and commit visual/__baseline__)."
+          echo "Visual changes detected. Download the visual-review artifact, review index.html, then run 'yarn visual:accept' locally and commit visual/__baseline__ if accepted."
           exit 1

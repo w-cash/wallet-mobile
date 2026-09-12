@@ -7,9 +7,6 @@ on:
         description: "Cache key"
         value: ${{ jobs.create-cache-key.outputs.cache-key }}
 
-env:
-  REPO-OWNER: ${{ github.repository_owner }}
-
 jobs:
   create-cache-key:
     name: Create cache key
@@ -17,33 +14,8 @@ jobs:
     outputs:
       cache-key: ${{ steps.create-cache-key.outputs.cache-key }}
     steps:
-      - name: Set envs for zingolib CI
-        if: ${{ contains(github.repository, 'zingolib') }}
-        run: echo "REPO-OWNER=zingolabs" >> $GITHUB_ENV
-
       - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          repository: ${{ env.REPO-OWNER }}/zingo-mobile
-
-      - name: Cargo update for zingolib CI
-        if: ${{ contains(github.repository, 'zingolib') }}
-        run: |
-          set -euo pipefail
-
-          TOML="rust/Cargo.toml"
-          REV="${GITHUB_SHA}"
-          PINS='^(zingolib|pepper-sync|zingolib_testutils|zingo-price)[[:space:]]*='
-
-          sed -i -E "/${PINS}/ s/(rev[[:space:]]*=[[:space:]]*\")[^\"]*(\")/\1${REV}\2/" "$TOML"
-
-          sed -i -E "/${PINS}/ s/(branch|tag)[[:space:]]*=[[:space:]]*\"[^\"]*\"/rev = \"${REV}\"/" "$TOML"
-
-          pinned="$(grep -E "$PINS" "$TOML")"
-          echo "zingolib pins =>"
-          echo "$pinned"
-          test "$(echo "$pinned" | wc -l)" -eq "$(echo "$pinned" | grep -c "rev = \"${REV}\"")"
-          ! echo "$pinned" | grep -qE '\b(branch|tag)[[:space:]]*='
 
       - name: Store Cargo version
         run: echo $(cargo --version) >> rust/cargo_version.txt
