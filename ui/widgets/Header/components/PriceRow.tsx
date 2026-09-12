@@ -15,7 +15,7 @@ import BoldText from '@ui/primitives/BoldText';
 import CurrencyAmount from '@ui/widgets/CurrencyAmount';
 import FadeText from '@ui/primitives/FadeText';
 
-const zcashLogo = require('../../../../assets/img/zcash-yellow.png');
+const zcashLogo = require('../../../../assets/img/logobig-zingo.png');
 
 type PriceRowProps = {
   translate: (key: string) => TranslateType;
@@ -85,9 +85,9 @@ const PriceRow: React.FC<PriceRowProps> = React.memo(
         />
         <View style={{ flex: 1 }}>
           <BoldText style={{ color: colors.fgDefault, fontSize: 14 }}>
-            Zcash
+            Wcash
           </BoldText>
-          <FadeText style={{ fontSize: 12 }}>ZEC</FadeText>
+          <FadeText style={{ fontSize: 12 }}>WEC</FadeText>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
           <CurrencyAmount

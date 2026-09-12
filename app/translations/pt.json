@@ -14,9 +14,9 @@
   "biometricsfailed-body": "Por questões de segurança, o aplicativo está bloqueado.",
   "biometricsfailed-footer": "Use o método de autenticação para desbloquear.",
   "biometricsfailed-button": "Desbloquear",
-  "price-ring-none": "Ainda não há preço de ZEC",
-  "price-ring-live": "O preço de ZEC está atualizado",
-  "price-ring-stale": "O preço de ZEC está desatualizado",
+  "price-ring-none": "Ainda não há preço de WEC",
+  "price-ring-live": "O preço de WEC está atualizado",
+  "price-ring-stale": "O preço de WEC está desatualizado",
   "biometrics-message": "Por favor, autentique-se",
   "biometrics-error": "Para sua segurança, você precisa autenticar essa ação novamente para executá-la. Você pode alterar isso em Configurações sempre que desejar.",
   "biometrics-failure-declined": "A autenticação foi cancelada ou falhou.",
@@ -29,14 +29,14 @@
   "save": "Salvar",
   "copy": "Cópia de",
   "confirm": "Confirmar",
-  "support": "Enviar E-mail",
+  "support": "Abrir suporte",
   "view-error": "Ver/Relatar Erro",
   "menudrawer-acc": "Abrir Menu Lateral",
-  "donation": "Doação para o Zingo!\nObrigado por apoiar o ZingoLabs!",
-  "zenny-tips-ab": "Zenny Gorjetas",
+  "donation": "As doações de desenvolvimento não estão disponíveis nesta compilação do Wcash Wallet.",
+  "zenny-tips-ab": "Doações de desenvolvimento",
   "restarting": "Error ao conectar ao servidor, o aplicativo será reiniciado em alguns segundos.",
   "change-privacy": "Nova política de privacidade: ",
-  "email": "support@zingolabs.org",
+  "email": "https://github.com/w-cash/wallet-mobile/issues",
   "subject": "Suporte {name}...",
   "body": "Preciso de ajuda com...",
   "syncing": "Sincronizando",
@@ -129,7 +129,7 @@
     "offline-message": "No modo offline você pode criar uma nova carteira ou restaurar uma a partir da semente ou da chave de visualização. Ela não será sincronizada nem mostrará saldos até você escolher um servidor.",
     "advancedmode": "Alterar para o Modo Avançado",
     "noopenwallet-message": "Ocorreu um erro enquanto o aplicativo tentava abrir a carteira atual.",
-    "walletrepair-body": "O arquivo da carteira parece criptografado duas vezes, um problema conhecido do Zingo 2.0.21. Seus fundos estão seguros. Não desinstale o aplicativo nem redefina a carteira. Toque em Reparar para corrigir o arquivo.",
+    "walletrepair-body": "O arquivo da carteira parece criptografado duas vezes, um problema conhecido do Wcash Wallet 2.0.21. Seus fundos estão seguros. Não desinstale o aplicativo nem redefina a carteira. Toque em Reparar para corrigir o arquivo.",
     "walletrepair-button": "Reparar",
     "walletrepair-success": "Arquivo da carteira reparado. Abrindo a carteira.",
     "walletrepair-failed": "O reparo não teve êxito. Não desinstale o aplicativo nem redefina a carteira. Envie este relatório ao suporte.",
@@ -155,8 +155,8 @@
     "alert-newwallet-body": "Você pode confirmar que deseja realmente criar uma nova carteira e perder o acesso à carteira atual.",
     "serverfirsttry": "Ocorreu um erro ao tentar conectar-se ao servidor acima, atualmente verificando os servidores na lista.",
     "serversecondtry": "Não parece haver nenhum problema com o servidor. Algo mais está acontecendo.",
-    "alert-donation-title": "APOIAR A ZINGOLABS",
-    "alert-donation-body": "Você quer ajudar o ZingoLabs a tornar o Zcash mais útil? Opte por dar uma gorjeta de um Zenny (0.01 ZEC) para ZingoLabs em cada transação! Se sim, pressione confirmar, caso contrário, pressione Cancelar.",
+    "alert-donation-title": "DOAÇÕES INDISPONÍVEIS",
+    "alert-donation-body": "As doações de desenvolvimento não estão disponíveis nesta compilação do Wcash Wallet.",
     "recoverkeys": "Recuperar a última Clave de Recuperação usada",
     "recoverkeysinstall": "Recuperou a última Clave de Recuperação usada neste dispositivo:",
     "customserver-unreachable": "Seu servidor personalizado não respondeu e a carteira retornou um erro. Abra Ajustes para escolher outro ou tente novamente mais tarde.",
@@ -179,8 +179,8 @@
     "insight": "Visão Financeira",
     "loadwalletfromseed-basic": "Restaurar outra Carteira",
     "addressbook": "Agenda de Endereços",
-    "tipzingolabs-basic": "Apoiar a ZingoLabs",
-    "support": "E-mail de suporte do {name}",
+    "tipzingolabs-basic": "Doações de desenvolvimento",
+    "support": "Wcash Wallet support",
     "changeservernew-error": "Error ao tentar alterar para um novo servidor: ",
     "readingwallet-error": "Error ao tentar ler a carteira com o novo servidor:",
     "differentchain-error": "Você está mudando para um servidor com uma rede diferente, você não terá mais acesso a essa carteira sem suas frases de recuperação.",
@@ -212,8 +212,8 @@
     "incoming-funds": "Fundos recebidos\n",
     "valuetransfer-confirmed": "Transação confirmada\n",
     "payment-made": "Pagamento efetuado\n",
-    "email-error-title": "Error ao abrir o cliente de e-mail",
-    "email-error-body": "Acesse as configurações do seu dispositivo e defina um aplicativo de e-mail padrão para enviar o relatório.",
+    "email-error-title": "Erro no link de suporte",
+    "email-error-body": "Não foi possível abrir a página de suporte do Wcash Wallet.",
     "migration-title": "Migração de carteira",
     "migration-body": "Estamos migrando sua carteira para o novo sistema de sincronização. Mantenha seu dispositivo conectado à energia e ao Wi-Fi.\n\nSeu saldo mudará conforme a migração avança. Não se preocupe, seus fundos estão seguros!"
   },
@@ -246,7 +246,7 @@
     "currencies": [
       {
         "value": "",
-        "text": "Não é possível buscar nenhum preço para outras moedas, apenas ZEC."
+        "text": "Não buscar preço de mercado; mostrar apenas valores em WEC."
       },
       {
         "value": "USD",
@@ -288,11 +288,11 @@
     "donations": [
       {
         "value": true,
-        "text": "Dê gorjeta ao ZingoLabs a Zenny (0.01 ZEC) em cada transação."
+        "text": "As doações de desenvolvimento não estão disponíveis nesta compilação."
       },
       {
         "value": false,
-        "text": "Não pague para incentivar um sistema mais seguro."
+        "text": "Sem doação de desenvolvimento."
       }
     ],
     "privacys": [
@@ -356,19 +356,19 @@
     "blockexplorers": [
       {
         "value": "Zcashexplorer",
-        "text": "ZcashExplorer.App"
+        "text": "Indisponível nesta compilação"
       },
       {
         "value": "Cipherscan",
-        "text": "CipherScan.App"
+        "text": "Indisponível nesta compilação"
       },
       {
         "value": "Zexplorer",
-        "text": "ZExplorer.App"
+        "text": "Indisponível nesta compilação"
       },
       {
         "value": "None",
-        "text": "None"
+        "text": "Indisponível nesta compilação"
       }
     ],
     "nochanges": "Nenhuma alteração registrada.",
@@ -401,12 +401,12 @@
     "language-title": "Linguagem",
     "islanguage": "Você precisa escolher um idioma para salvar.",
     "sendall-title": "Ativar o envio de todos os fundos",
-    "donation-title": "Dica ZingoLabs",
+    "donation-title": "Doações de desenvolvimento",
     "privacy-title": "High Privacy",
     "mode-title": "Alterar entre o modo Básico ou Avançado",
     "rescanmenu-title": "Mostrar o botão de reescaneamento",
     "recoverywalletinfoondevice-title": "Armazene informações de recuperação da carteira",
-    "performancelevel-title": "Zingolib Performance Level",
+    "performancelevel-title": "Nível de desempenho da sincronização",
     "blockexplorer-title": "Block Explorer",
     "value-currency-": "Sem Saldo",
     "value-currency-USD": "US Dólares",
@@ -437,9 +437,9 @@
     "value-performancelevel-High": "High",
     "value-performancelevel-Medium": "Medium",
     "value-performancelevel-Low": "Low",
-    "value-blockexplorer-Zcashexplorer": "Zcashexplorer",
-    "value-blockexplorer-Cipherscan": "Cipherscan",
-    "value-blockexplorer-Zexplorer": "Zexplorer",
+    "value-blockexplorer-Zcashexplorer": "Indisponível nesta compilação",
+    "value-blockexplorer-Cipherscan": "Indisponível nesta compilação",
+    "value-blockexplorer-Zexplorer": "Indisponível nesta compilação",
     "value-blockexplorer-None": "Nenhum",
     "security-title": "Apply Device Security",
     "security-all": "Todos",
@@ -505,10 +505,10 @@
     "zainod": "URL do servidor",
     "network": "Rede",
     "serverblock": "Altura do Bloco do Servidor",
-    "zecprice": "Preço do ZEC",
+    "zecprice": "Preço do WEC",
     "unknown": "Desconhecido",
     "title": "Informações do Servidor",
-    "zingolib": "Versão Zingolib"
+    "zingolib": "Versão do núcleo da carteira"
   },
   "rescan": {
     "title": "Rescan",
@@ -518,7 +518,9 @@
   },
   "seed": {
     "buttontexts": {
-      "new": ["Eu salvei \n as Frases de Recuperação"],
+      "new": [
+        "Eu salvei \n as Frases de Recuperação"
+      ],
       "change": [
         "",
         "Abrir Nova Carteira",
@@ -531,8 +533,12 @@
         "Você realmente quer \n alterar para o seu \n servidor atual",
         "Tem certeza?"
       ],
-      "view": ["Eu salvei as \n Frases de Recuperação"],
-      "restore": ["Restaurar Carteira"],
+      "view": [
+        "Eu salvei as \n Frases de Recuperação"
+      ],
+      "restore": [
+        "Restaurar Carteira"
+      ],
       "backup": [
         "",
         "Restaurar",
@@ -583,8 +589,8 @@
     "title": "Enviar",
     "toaddress": "Endereço",
     "invalidaddress": "Endereço Inválido!",
-    "znsnamenotfound": "Esse nome .zcash/.zec não existe!",
-    "addressplaceholder": "Endereço ou nome.zcash/.zec",
+    "znsnamenotfound": "O endereço não é válido.",
+    "addressplaceholder": "Endereço Wcash",
     "invalidamount": "Quantia Invalida!",
     "invalidnumber": "Número Inválido!",
     "spendable": "Disponível: ",
@@ -604,7 +610,7 @@
     "title-acc": "Enviar Screen",
     "address-acc": "Campo de Endereço",
     "scan-acc": "Escaneie um Endereço",
-    "zec-acc": "Campo de Valor ZEC",
+    "zec-acc": "Campo de valor WEC",
     "usd-acc": "Campo de Valor USD",
     "memo-acc": "Campo de MEMO",
     "sendall": "Enviar Tudo",
@@ -620,8 +626,8 @@
     "deshielded": "Desblindada",
     "lose-address-title": "SELECIONE UM NOVO ENDEREÇO",
     "lose-address-alert": "Você já possui um endereço válido no campo de endereço. Deseja substituí-lo?",
-    "confirm-donation": "Doação",
-    "donation-minimum-message": "O valor mínimo para doações é um Zenny (0,01 ZEC), tente novamente e obrigado.",
+    "confirm-donation": "Doações indisponíveis",
+    "donation-minimum-message": "As doações de desenvolvimento não estão disponíveis nesta compilação.",
     "nym-processing-title": "Processando via NYM",
     "nym-enhanced": "NYM Aprimorado",
     "nym-warning": "Esta transação será roteada através do mixnet NYM para maior privacidade. Pode levar um pouco mais de tempo do que as transações padrão."
@@ -640,9 +646,9 @@
     "danger-zone": "ZONA DE PERIGO",
     "go-to-transparent": "Ver endereço transparente",
     "title-acc": "Tela de Recebimento",
-    "shielded-orchard": "Apenas Orchard (Ironwood)",
+    "shielded-orchard": "Apenas Ironwood",
     "shielded-sapling": "Apenas Sapling",
-    "shielded-orchard-sapling": "Orchard (Ironwood) + Sapling",
+    "shielded-orchard-sapling": "Ironwood + Sapling",
     "verify": "Verificar Endereços",
     "copy-address-button": "Copiar endereço",
     "modal-transparent": {
@@ -728,7 +734,7 @@
     "pool": "Pool",
     "contactcopied": "Contato copiado para a Área de Transparência",
     "address-http": "{name} não tem ideia de quem lhe enviou este Endereço! Você deve autenticar o Remetente.",
-    "address-https": "Endereço Zingo-Authenticated",
+    "address-https": "Endereço Wcash Wallet-Authenticated",
     "type": "Tipo",
     "not-confirmed": "Transação ainda não confirmada",
     "calculated": "Calculada",
@@ -780,9 +786,9 @@
   },
   "about": {
     "copyright": [
-      "Copyright (c) 2026, ZingoLabs.",
+      "Copyright (c) 2026, Wcash Wallet.",
       "Construído com React Native.",
-      "A licença do MIT (MIT) Copyright (c) 2026 Zingo",
+      "A licença do MIT (MIT) Copyright (c) 2026 Wcash Wallet",
       "A permissão é concedida gratuitamente a qualquer pessoa que obtenha uma cópia deste software e dos arquivos de documentação associados, para negociá-lo sem restrições, incluindo, sem limitações, direitos de usar, copiar, modificar, mesclar, publicar, distribuir, sublicenciar e/ou vender cópias do Software e permitir que as pessoas a quem o mesmo seja fornecido o façam, sujeito às seguintes condições:",
       "O aviso de direitos autorais acima e este aviso de permissão serão incluídos em todas as cópias ou partes substanciais do Software.",
       "O SOFTWARE É FORNECIDO 'COMO ESTÁ', SEM GARANTIA ALGUMA, SEJA EXPRESSA OU IMPLÍCITA, MAS NÃO SE LIMITANDO ÀS GARANTIAS DE COMERCIALIZAÇÃO, ADEQUAÇÃO A UM DETERMINADO FIM E SEM VIOLAÇÕES. EM HIPÓTESE ALGUMA OS AUTORES OU DETENTORES DE DIREITOS AUTORAIS SERÃO RESPONSÁVEIS POR QUALQUER RECLAMAÇÃO, DANOS OU OUTRAS RESPONSABILIDADES, SEJA EM UMA AÇÃO DE CONTRATO, ATO ILÍCITO OU DE OUTRA FORMA, DECORRENTE A ALGO RELACIONADO A CONEXÃO, A USABILIDADE OU OUTRAS NEGOCIAÇÕES NO SOFTWARE."
@@ -790,11 +796,13 @@
   },
   "scanner": {
     "text": "Faça o Scan de uma Chave de Visualização Unificada completa",
-    "scanaddress": "Escaneie um Endereço Zcash"
+    "scanaddress": "Escanear um endereço Wcash"
   },
   "ufvk": {
     "buttontexts": {
-      "view": ["Eu salvei a \n chave de visualização"],
+      "view": [
+        "Eu salvei a \n chave de visualização"
+      ],
       "change": [
         "",
         "Abrir Nova Carteira",
@@ -850,7 +858,7 @@
     "title2": "O que você pode fazer",
     "orchard": "ORCHARD",
     "ironwood": "IRONWOOD",
-    "step1-body-1": "A **Ironwood** é um novo lar, mais privado, para o seu Zcash. Sua privacidade é matematicamente comprovada.",
+    "step1-body-1": "A **Ironwood** é um novo lar, mais privado, para o seu Wcash. Sua privacidade é matematicamente comprovada.",
     "step1-body-2": "Após a atualização **NU6.3**, a antiga pool **Orchard** deixa de receber novos fundos e os novos pagamentos vão para a Ironwood.",
     "option1-label": "Continuar normalmente",
     "option1-body": "Continue usando sua carteira normalmente. Cada transação revelará seu valor.",
@@ -1000,7 +1008,7 @@
     "replanned": "Suas notas mudaram. Revise o cronograma atualizado.",
     "review": "Revisar cronograma",
     "dust-title": "Não resta nada para migrar",
-    "dust-body": "Os {amount} ZEC que restam na Orchard estão abaixo do valor que vale a pena mover. As taxas custariam mais do que ele carrega.",
+    "dust-body": "Os {amount} WEC que restam na Orchard estão abaixo do valor que vale a pena mover. As taxas custariam mais do que ele carrega.",
     "unconfirmed-title": "Suas notas ainda não estão confirmadas",
     "unconfirmed-body": "As transações de divisão já estão na cadeia, mas a carteira não pode gastar as notas delas por mais um bloco ou dois. Tente de novo em alguns minutos.",
     "back": "Voltar",
@@ -1016,7 +1024,7 @@
     "tech-line-now": "Âncora {anchor} - Janela atual",
     "miss-note": "Se você perder uma janela, o lote simplesmente espera por uma futura — isso é esperado, não um erro.",
     "reminder-title": "Hora de enviar o lote {n}",
-    "reminder-body": "Abra o Zingo para enviar este lote para a Ironwood.",
+    "reminder-body": "Abra o Wcash Wallet para enviar este lote para a Ironwood.",
     "armed": "Lembretes agendados.",
     "denied": "As notificações estão desativadas. Volte pelo aviso da tela inicial quando quiser.",
     "back": "Voltar",
@@ -1084,7 +1092,7 @@
   },
   "uris": {
     "baduri": "Error: Erro na URI .",
-    "notvalid": "não era um endereço zcash válido",
+    "notvalid": "O endereço não é válido.",
     "notvalidparameter": "não foi entendido como um parâmetro válido",
     "notvalidvalue": "Não entendi o valor do parâmetro",
     "noindex": "Index desconhecido",
@@ -1097,6 +1105,6 @@
     "memo-too-long": "Memo muito longo no parâmetro",
     "error-http-not-allowed": "Error: HTTP em texto plano só é permitido para localhost. Use HTTPS para servidores remotos."
   },
-  "donation-button": "Doar para ZingoLabs ",
-  "donation-legend": "Você está doando para ZingoLabs ativamente, Obrigado"
+  "donation-button": "Doações indisponíveis",
+  "donation-legend": "As doações de desenvolvimento estão desativadas."
 }

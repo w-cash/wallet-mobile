@@ -1,12 +1,10 @@
-Zingo! Wallet te permite usar Dinero Seguro Real (RSM), basado en Zcash, para transacciones inbloqueables, incensurables e indetectables.
+Wcash Wallet conserva la interfaz móvil original y la adapta para Wcash Testnet y Regtest local. Los fondos de prueba TWC no tienen valor monetario.
 
-Gracias a la Criptografía de Conocimiento Cero, tienes total control y privacidad sobre tu dinero y tus mensajes.
-
-¿Qué puedes hacer con Zingo?
-* Enviar ZEC y mensajes de forma rápida, privada y segura.
+¿Qué puedes hacer con Wcash Wallet?
+* Crear o restaurar un monedero de 24 palabras.
+* Sincronizar con un servidor ligero de Wcash.
+* Recibir y enviar TWC con direcciones Ironwood.
 * Añadir direcciones a tu libreta de direcciones y guardarlas como contactos.
-* Blindar tus fondos transparentes y garantizar un gasto seguro para mayor privacidad.
-* Uso básico y avanzado para todos los usuarios.
-* Gestión automática del servidor que mantiene tu monedero sincronizado.
+* Revisar el historial de transacciones confirmadas.
 
-Descarga Zingo! para experimentar la libertad financiera con RSM.
+Wcash Mainnet no está habilitado en esta compilación de prueba.

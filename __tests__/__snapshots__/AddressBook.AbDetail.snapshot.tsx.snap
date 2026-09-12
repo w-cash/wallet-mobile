@@ -286,7 +286,7 @@ exports[`Component Address Book Details - test Address Book Datails - Add - snap
             }
           }
         >
-          Zcash
+          Wcash
         </Text>
         <
           color="#888888"
@@ -580,7 +580,7 @@ exports[`Component Address Book Details - test Address Book Datails - Add - snap
                 }
               }
             >
-              Zcash
+              Wcash
             </Text>
             <Text
               style={
@@ -3783,7 +3783,7 @@ exports[`Component Address Book Details - test Address Book Datails - Delete - s
             }
           }
         >
-          Zcash
+          Wcash
         </Text>
       </View>
       <View
@@ -4060,7 +4060,7 @@ exports[`Component Address Book Details - test Address Book Datails - Delete - s
                 }
               }
             >
-              Zcash
+              Wcash
             </Text>
             <Text
               style={
@@ -4540,7 +4540,7 @@ exports[`Component Address Book Details - test Address Book Datails - Modify - s
             }
           }
         >
-          Zcash
+          Wcash
         </Text>
       </View>
       <View
@@ -4817,7 +4817,7 @@ exports[`Component Address Book Details - test Address Book Datails - Modify - s
                 }
               }
             >
-              Zcash
+              Wcash
             </Text>
             <Text
               style={

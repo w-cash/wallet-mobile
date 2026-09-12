@@ -1,4 +1,4 @@
-appId: org.ZingoLabs.Zingo
+appId: com.wcashwallet.wallet
 ---
 - launchApp:
     clearState: true

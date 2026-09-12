@@ -37,7 +37,7 @@ describe('parseZcashURI — Issue H: failures carry no target', () => {
   });
 
   test('valid path-as-address → paymentTarget populated', async () => {
-    const r = await parseZcashURI(`zcash:${VALID_ADDR}`, mainnetServer);
+    const r = await parseZcashURI(`wcash:${VALID_ADDR}`, mainnetServer);
     expect(r).toMatchObject({
       kind: 'paymentTarget',
       target: { address: VALID_ADDR },
@@ -47,7 +47,7 @@ describe('parseZcashURI — Issue H: failures carry no target', () => {
   test('valid address + amount + memo → all populated', async () => {
     const memoB64 = Base64.encode('hello');
     const r = await parseZcashURI(
-      `zcash:${VALID_ADDR}?amount=0.1&memo=${memoB64}`,
+      `wcash:${VALID_ADDR}?amount=0.1&memo=${memoB64}`,
       mainnetServer,
     );
     expect(r).toMatchObject({
@@ -61,7 +61,7 @@ describe('parseZcashURI — Issue H: failures carry no target', () => {
       isValid: false,
       shieldedOnlyUA: '',
     });
-    const r = await parseZcashURI(`zcash:${INVALID_ADDR}`, mainnetServer);
+    const r = await parseZcashURI(`wcash:${INVALID_ADDR}`, mainnetServer);
     expect(r).toEqual({ kind: 'error', errorKey: 'uris.notvalid' });
     expect(Object.keys(r)).not.toContain('target');
   });
@@ -72,7 +72,7 @@ describe('parseZcashURI — Issue H: failures carry no target', () => {
       shieldedOnlyUA: '',
     });
     const r = await parseZcashURI(
-      `zcash:?address=${INVALID_ADDR}`,
+      `wcash:?address=${INVALID_ADDR}`,
       mainnetServer,
     );
     expect(r).toEqual({ kind: 'error', errorKey: 'uris.notvalid' });
@@ -80,7 +80,7 @@ describe('parseZcashURI — Issue H: failures carry no target', () => {
 
   test('negative amount → amount error with the offending value', async () => {
     const r = await parseZcashURI(
-      `zcash:${VALID_ADDR}?amount=-1`,
+      `wcash:${VALID_ADDR}?amount=-1`,
       mainnetServer,
     );
     expect(r).toEqual({
@@ -92,14 +92,14 @@ describe('parseZcashURI — Issue H: failures carry no target', () => {
 
   test('amount above 21,000,000 cap → amount error', async () => {
     const r = await parseZcashURI(
-      `zcash:${VALID_ADDR}?amount=21000001`,
+      `wcash:${VALID_ADDR}?amount=21000001`,
       mainnetServer,
     );
     expect(r).toMatchObject({ kind: 'error', errorKey: 'uris.amount' });
   });
 
   test('unknown parameter → noparameter error naming it', async () => {
-    const r = await parseZcashURI(`zcash:${VALID_ADDR}?foo=bar`, mainnetServer);
+    const r = await parseZcashURI(`wcash:${VALID_ADDR}?foo=bar`, mainnetServer);
     expect(r).toEqual({
       kind: 'error',
       errorKey: 'uris.noparameter',
@@ -109,7 +109,7 @@ describe('parseZcashURI — Issue H: failures carry no target', () => {
 
   test('duplicate address (path + query both set address) → error', async () => {
     const r = await parseZcashURI(
-      `zcash:${VALID_ADDR}?address=${VALID_ADDR}`,
+      `wcash:${VALID_ADDR}?address=${VALID_ADDR}`,
       mainnetServer,
     );
     expect(r).toEqual({
@@ -121,7 +121,7 @@ describe('parseZcashURI — Issue H: failures carry no target', () => {
 
   test('extra-dotted parameter (address.1.2) → error', async () => {
     const r = await parseZcashURI(
-      `zcash:${VALID_ADDR}?address.1.2=${VALID_ADDR}`,
+      `wcash:${VALID_ADDR}?address.1.2=${VALID_ADDR}`,
       mainnetServer,
     );
     expect(r).toEqual({
@@ -136,13 +136,22 @@ describe('parseZcashURI — Issue H: failures carry no target', () => {
     expect(r).toEqual({ kind: 'error', errorKey: 'uris.baduri' });
   });
 
-  test('non-zcash protocol → baduri error', async () => {
+  test('non-Wcash protocol → baduri error', async () => {
     const r = await parseZcashURI(`bitcoin:${VALID_ADDR}`, mainnetServer);
     expect(r).toEqual({ kind: 'error', errorKey: 'uris.baduri' });
   });
 
-  test('zcash: without address but with amount → noaddress error', async () => {
-    const r = await parseZcashURI('zcash:?amount=1', mainnetServer);
+  test('upstream Zcash protocol is rejected', async () => {
+    const r = await parseZcashURI(`zcash:${VALID_ADDR}`, mainnetServer);
+    expect(r).toEqual({
+      kind: 'error',
+      errorKey: 'uris.baduri',
+      param: undefined,
+    });
+  });
+
+  test('wcash: without address but with amount → noaddress error', async () => {
+    const r = await parseZcashURI('wcash:?amount=1', mainnetServer);
     expect(r).toEqual({ kind: 'error', errorKey: 'uris.noaddress' });
   });
 });

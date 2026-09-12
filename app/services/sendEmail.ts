@@ -5,13 +5,14 @@ import { sanitizePaths } from '@app/utils/sanitizePaths';
 import { getZingoName, getZingoVersion } from '@app/utils/ZingoAppData';
 import { showConfirm } from './showConfirm';
 
+const SUPPORT_ISSUES_URL = 'https://github.com/w-cash/wallet-mobile/issues';
+
 export const sendEmail = async (
   translate: (key: string) => TranslateType,
   zingolibVersion: string,
   subject?: string,
   body?: string,
 ) => {
-  const email: string = translate('email') as string;
   // Sanitize subject + body so a stack-trace or path baked into an error
   // never leaks the developer's username (Hermes embeds compile-time
   // absolute paths into release stacks) or the user's profile folder.
@@ -28,7 +29,7 @@ export const sendEmail = async (
   const manufacturer = await DeviceInfo.getManufacturer();
   const model = DeviceInfo.getModel();
 
-  const url = `mailto:${email}?subject=${encodeURIComponent(subjectEmail)}&body=${encodeURIComponent(
+  const url = `${SUPPORT_ISSUES_URL}/new?title=${encodeURIComponent(subjectEmail)}&body=${encodeURIComponent(
     manufacturer +
       ' / ' +
       model +
@@ -48,10 +49,10 @@ export const sendEmail = async (
 
   try {
     await Linking.openURL(url);
-    console.log('Email client opened', url);
+    console.log('Support page opened', SUPPORT_ISSUES_URL);
   } catch (err: unknown) {
     console.log(
-      'Error opening email client:',
+      'Error opening support page:',
       err instanceof Error ? err.message : String(err),
     );
     showConfirm({

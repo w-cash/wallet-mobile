@@ -151,64 +151,64 @@ describe('Utils.splitZecAmountIntoBigSmall', () => {
 describe('Utils.getBlockExplorerTxIDURL', () => {
   const txid = 'abc123';
 
-  test('Zcashexplorer mainnet', () => {
+  test('Zcashexplorer mainnet stays disabled without an approved Wcash explorer', () => {
     expect(
       Utils.getBlockExplorerTxIDURL(
         txid,
         ChainNameEnum.mainChainName,
         BlockExplorerEnum.Zcashexplorer,
       ),
-    ).toBe(`https://mainnet.zcashexplorer.app/transactions/${txid}`);
+    ).toBe('');
   });
 
-  test('Zcashexplorer testnet', () => {
+  test('Zcashexplorer testnet stays disabled without an approved Wcash explorer', () => {
     expect(
       Utils.getBlockExplorerTxIDURL(
         txid,
         ChainNameEnum.testChainName,
         BlockExplorerEnum.Zcashexplorer,
       ),
-    ).toBe(`https://testnet.zcashexplorer.app/transactions/${txid}`);
+    ).toBe('');
   });
 
-  test('Cipherscan mainnet', () => {
+  test('Cipherscan mainnet stays disabled without an approved Wcash explorer', () => {
     expect(
       Utils.getBlockExplorerTxIDURL(
         txid,
         ChainNameEnum.mainChainName,
         BlockExplorerEnum.Cipherscan,
       ),
-    ).toBe(`https://cipherscan.app/tx/${txid}`);
+    ).toBe('');
   });
 
-  test('Cipherscan testnet', () => {
+  test('Cipherscan testnet stays disabled without an approved Wcash explorer', () => {
     expect(
       Utils.getBlockExplorerTxIDURL(
         txid,
         ChainNameEnum.testChainName,
         BlockExplorerEnum.Cipherscan,
       ),
-    ).toBe(`https://testnet.cipherscan.app/tx/${txid}`);
+    ).toBe('');
   });
 
-  test('Zexplorer mainnet', () => {
+  test('Zexplorer mainnet stays disabled without an approved Wcash explorer', () => {
     expect(
       Utils.getBlockExplorerTxIDURL(
         txid,
         ChainNameEnum.mainChainName,
         BlockExplorerEnum.Zexplorer,
       ),
-    ).toBe(`https://zexplorer.app/mainnet/tx/${txid}`);
+    ).toBe('');
   });
 
-  test('Zexplorer testnet', () => {
+  test('Zexplorer testnet stays disabled without an approved Wcash explorer', () => {
     expect(
       Utils.getBlockExplorerTxIDURL(
         txid,
         ChainNameEnum.testChainName,
         BlockExplorerEnum.Zexplorer,
       ),
-    ).toBe(`https://zexplorer.app/testnet/tx/${txid}`);
+    ).toBe('');
   });
 
   test('None returns empty string', () => {

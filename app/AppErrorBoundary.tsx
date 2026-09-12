@@ -17,11 +17,11 @@ import { getZingoName, getZingoVersion } from './utils/ZingoAppData';
 const boundaryTranslate = (key: string): TranslateType => {
   switch (key) {
     case 'email':
-      return 'support@zingolabs.org';
+      return 'https://github.com/w-cash/wallet-mobile/issues';
     case 'loadedapp.email-error-title':
-      return 'Email error';
+      return 'Support link error';
     case 'loadedapp.email-error-body':
-      return 'Could not open the email client.';
+      return 'Could not open the Wcash Wallet support page.';
     case 'close':
       return 'Close';
     default:
@@ -93,7 +93,7 @@ class AppErrorBoundary extends Component<React.PropsWithChildren, State> {
           {zingolibVersion ? (
             <Text
               style={styles.versionLine}
-            >{`Zingolib: ${zingolibVersion}`}</Text>
+            >{`Wallet core: ${zingolibVersion}`}</Text>
           ) : null}
         </View>
         <ScrollView

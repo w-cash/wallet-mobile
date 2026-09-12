@@ -286,7 +286,7 @@ else
     nohup yarn react-native start &> "${test_report_dir}/react_native.out" &
         
     echo -e "\nLaunching App..."
-    adb shell am start -n "org.ZingoLabs.Zingo/org.ZingoLabs.Zingo.MainActivity" -a android.intent.action.MAIN \
+    adb shell am start -n "com.wcashwallet.wallet/org.ZingoLabs.Zingo.MainActivity" -a android.intent.action.MAIN \
         -c android.intent.category.LAUNCHER &> "${test_report_dir}/launch_app.out"
 
     echo -e "\nTest reports saved: android/${test_report_dir}"        

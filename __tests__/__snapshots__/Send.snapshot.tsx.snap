@@ -468,7 +468,7 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
             <Image
               source={
                 {
-                  "testUri": "../../../assets/img/zcash-yellow.png",
+                  "testUri": "../../../assets/img/logobig-zingo.png",
                 }
               }
               style={
@@ -496,7 +496,7 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
                   }
                 }
               >
-                Zcash
+                Wcash
               </Text>
               <Text
                 style={
@@ -507,7 +507,7 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
                   }
                 }
               >
-                ZEC
+                WEC
               </Text>
             </View>
             <View

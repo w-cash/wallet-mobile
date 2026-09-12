@@ -30,6 +30,12 @@ type HoshServer = {
 const fetchServerList = async (
   chainName: ChainNameEnum,
 ): Promise<ServerUrisType[]> => {
+  // No public Wcash server registry is approved. This also prevents a
+  // Wcash-branded build from querying the upstream Zcash registry.
+  const WCASH_SERVER_REGISTRY_AVAILABLE = false;
+  if (!WCASH_SERVER_REGISTRY_AVAILABLE) {
+    return [];
+  }
   // Regtest is a local dev chain — no public registry.
   if (chainName === ChainNameEnum.regtestChainName) {
     return [];

@@ -1,5 +1,6 @@
 import {
   getApplicationName,
+  getBundleId,
   getVersion,
   getBuildNumber,
 } from 'react-native-device-info';
@@ -56,7 +57,7 @@ const BETA_LOGO = require('../../assets/img/logobig-zingo-beta.png');
  * `getZingoName()`.
  */
 export function getZingoLogo() {
-  return getApplicationName() === 'Zingo Beta' ? BETA_LOGO : PROD_LOGO;
+  return getBundleId().endsWith('.beta') ? BETA_LOGO : PROD_LOGO;
 }
 
 /**

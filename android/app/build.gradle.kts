@@ -118,7 +118,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "org.ZingoLabs.Zingo" // Real
+        applicationId = "com.wcashwallet.wallet"
         minSdk = rootProject.extra["minSdkVersion"] as Int
         targetSdk = rootProject.extra["targetSdkVersion"] as Int
         versionCode = 317 // Real (prod baseline; beta flavor overrides below)
@@ -150,7 +150,7 @@ android {
     productFlavors {
         create("prod") {
             dimension = "channel"
-            resValue("string", "app_name", "Zingo")
+            resValue("string", "app_name", "Wcash Wallet")
             // Privacy/anti-tamper controls from the Least Authority audit.
             // Prod enforces them; beta disables them so testers can take
             // screenshots, record video, and so screen-recorder overlays
@@ -161,10 +161,10 @@ android {
         }
         create("beta") {
             dimension = "channel"
-            applicationIdSuffix = ".Beta"
+            applicationIdSuffix = ".beta"
             versionCode = 331 // beta override
             versionName = "2.0.23" // beta override
-            resValue("string", "app_name", "Zingo Beta")
+            resValue("string", "app_name", "Wcash Wallet")
             resValue("bool", "enforce_privacy_controls", "false")
         }
     }

@@ -75,8 +75,8 @@ mkdir -p "${test_report_dir}"
 
 # A clean slate for this test's app state: the emulator may be carrying a
 # previous test's wallet data when several tests share one session.
-adb -s emulator-5554 uninstall org.ZingoLabs.Zingo &> /dev/null || true
-adb -s emulator-5554 uninstall org.ZingoLabs.Zingo.test &> /dev/null || true
+adb -s emulator-5554 uninstall com.wcashwallet.wallet &> /dev/null || true
+adb -s emulator-5554 uninstall com.wcashwallet.wallet.test &> /dev/null || true
 
 echo -e "\nInstalling Test APK..."
 i=0
@@ -121,8 +121,8 @@ adb -s emulator-5554 shell cat /proc/cpuinfo &> "${test_report_dir}/cpuinfo.txt"
 nohup adb -s emulator-5554 shell logcat -v threadtime -b main &> "${test_report_dir}/logcat.txt" &
 
 # Create additional test output directory
-adb -s emulator-5554 shell rm -rf "/sdcard/Android/media/org.ZingoLabs.Zingo/additional_integration_test_output"
-adb -s emulator-5554 shell mkdir -p "/sdcard/Android/media/org.ZingoLabs.Zingo/additional_integration_test_output"
+adb -s emulator-5554 shell rm -rf "/sdcard/Android/media/com.wcashwallet.wallet/additional_integration_test_output"
+adb -s emulator-5554 shell mkdir -p "/sdcard/Android/media/com.wcashwallet.wallet/additional_integration_test_output"
 
 echo -e "\nRunning integration tests..."
 nohup yarn start &> "${test_report_dir}/metro.txt" &
@@ -134,14 +134,14 @@ if [ -n "${ACTIVATION_HEIGHTS:-}" ]; then
 fi
 
 adb -s emulator-5554 shell am instrument -w -r -e class org.ZingoLabs.Zingo.$test_name \
-    -e additionalTestOutputDir /sdcard/Android/media/org.ZingoLabs.Zingo/additional_integration_test_output \
+    -e additionalTestOutputDir /sdcard/Android/media/com.wcashwallet.wallet/additional_integration_test_output \
     "${activation_heights_args[@]}" \
-    -e testTimeoutSeconds 31536000 org.ZingoLabs.Zingo.test/androidx.test.runner.AndroidJUnitRunner \
+    -e testTimeoutSeconds 31536000 com.wcashwallet.wallet.test/androidx.test.runner.AndroidJUnitRunner \
     | tee "${test_report_dir}/test_results.txt"
 
 # Store additional test outputs
-if [ -n "$(adb -s emulator-5554 shell ls -A /sdcard/Android/media/org.ZingoLabs.Zingo/additional_integration_test_output 2>/dev/null)" ]; then
-    adb -s emulator-5554 shell cat /sdcard/Android/media/org.ZingoLabs.Zingo/additional_integration_test_output/* \
+if [ -n "$(adb -s emulator-5554 shell ls -A /sdcard/Android/media/com.wcashwallet.wallet/additional_integration_test_output 2>/dev/null)" ]; then
+    adb -s emulator-5554 shell cat /sdcard/Android/media/com.wcashwallet.wallet/additional_integration_test_output/* \
         &> "${test_report_dir}/additional_integration_test_output.txt"
 fi
 

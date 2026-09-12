@@ -1,1 +1,1 @@
-Zingo! is a private wallet and messenger for Zcash.
+Wcash Testnet wallet using the original mobile interface.

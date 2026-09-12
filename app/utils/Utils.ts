@@ -28,11 +28,7 @@ import {
 } from '@app/AppState';
 
 import randomColor from 'randomcolor';
-import {
-  getDonationAddress,
-  getZenniesDonationAddress,
-  parseAddress,
-} from '@app/walletBackend';
+import { parseAddress } from '@app/walletBackend';
 import { Buffer } from 'buffer';
 import { RPCParseAddressType } from '@app/walletBackend/types/RPCParseAddressType';
 import { RPCParseAddressStatusEnum } from '@app/walletBackend/enums/RPCParseAddressStatusEnum';
@@ -120,44 +116,32 @@ export default class Utils {
     return chunks;
   }
 
-  // DONATION TO ZINGOLABS
-  static async getDonationAddress(chainName: ChainNameEnum): Promise<string> {
-    // donations only for mainnet.
-    if (chainName === ChainNameEnum.mainChainName) {
-      // UA -> we need a fresh one.
-      const ua = await getDonationAddress();
-      return ua.ok ? ua.value : '';
-    }
+  // No Wcash donation address has been approved for this build.
+  static async getDonationAddress(_chainName: ChainNameEnum): Promise<string> {
     return '';
   }
 
   static getDonationAmount(): string {
     const { decimalSeparator } = getNumberFormatSettings();
 
-    return '0' + decimalSeparator + '01';
+    return '0' + decimalSeparator + '00';
   }
 
   static getDonationMemo(translate: (key: string) => TranslateType): string {
     return translate('donation') as string;
   }
 
-  // ZENNIES FOR ZINGO
+  // No secondary Wcash donation address has been approved for this build.
   static async getZenniesDonationAddress(
-    chainName: ChainNameEnum,
+    _chainName: ChainNameEnum,
   ): Promise<string> {
-    // donations only for mainnet.
-    if (chainName === ChainNameEnum.mainChainName) {
-      // UA -> we need a fresh one.
-      const ua = await getZenniesDonationAddress();
-      return ua.ok ? ua.value : '';
-    }
     return '';
   }
 
   static getZenniesDonationAmount(): string {
     const { decimalSeparator } = getNumberFormatSettings();
 
-    return '0' + decimalSeparator + '01';
+    return '0' + decimalSeparator + '00';
   }
 
   // NYM
@@ -213,6 +197,12 @@ export default class Utils {
     chainName: ChainNameEnum,
     blockExplorer: BlockExplorerEnum,
   ): string {
+    // No Wcash explorer has been approved. Keep the existing affordance
+    // fail-closed until a network-specific explorer is reviewed.
+    const hasApprovedWcashExplorer = false;
+    if (!hasApprovedWcashExplorer) {
+      return '';
+    }
     // Regtest is a local dev chain no public explorer can index — never link,
     // regardless of the selected explorer. Returning '' makes every caller
     // hide the affordance.
@@ -296,9 +286,15 @@ export default class Utils {
     donation: boolean,
   ): Promise<SendJsonToTypeType[]> {
     const to = sendPageState.toaddr;
+    const developerDonationAddress = await Utils.getDonationAddress(
+      server.chainName,
+    );
+    const zenniesDonationAddress = await Utils.getZenniesDonationAddress(
+      server.chainName,
+    );
     const donationAddress: boolean =
-      to.to === (await Utils.getDonationAddress(server.chainName)) ||
-      to.to === (await Utils.getZenniesDonationAddress(server.chainName));
+      (developerDonationAddress !== '' && to.to === developerDonationAddress) ||
+      (zenniesDonationAddress !== '' && to.to === zenniesDonationAddress);
 
     const memo = Utils.buildMemo(to.memo, to.includeUAMemo, uAddress);
     const amount = parseInt(
@@ -344,10 +340,11 @@ export default class Utils {
     if (
       donation &&
       server.chainName === ChainNameEnum.mainChainName &&
+      zenniesDonationAddress !== '' &&
       !donationAddress
     ) {
       donationTransaction.push({
-        address: await Utils.getZenniesDonationAddress(server.chainName),
+        address: zenniesDonationAddress,
         amount: parseInt(
           (
             Utils.parseStringLocaleToNumberFloat(

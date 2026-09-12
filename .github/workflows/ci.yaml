@@ -1,9 +1,10 @@
 name: CI
 
 on:
-  pull_request:
-  push:
-    branches: [main, dev, stable]
+  # The upstream fan-out is retained for reference/manual migration only. It
+  # hard-codes Zingo repository paths, private runner labels, and Zcash test
+  # topology. PRs use wcash-pr-qa.yaml, whose build boundaries are Wcash-only
+  # and run entirely on GitHub-hosted workers.
   workflow_dispatch:
 
 # A new push to a PR supersedes the in-flight run, so cancel it and free its

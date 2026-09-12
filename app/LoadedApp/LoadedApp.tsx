@@ -508,6 +508,7 @@ export default function LoadedApp(props: LoadedAppProps) {
       // adding `Zenny Tips` address always.
       let ab = await AddressBookFileImpl.readAddressBook();
       if (
+        zenniesAddress &&
         ab.filter((a: AddressBookFileClass) => a.address === zenniesAddress)
           .length === 0
       ) {
