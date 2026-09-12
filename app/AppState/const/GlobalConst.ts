@@ -1,5 +1,5 @@
 export const GlobalConst = {
-  zcash: 'zcash:',
+  zcash: 'wcash:',
   port80: '80',
   port443: '443',
   port9067: '9067',
@@ -19,8 +19,8 @@ export const GlobalConst = {
   yes: 'yes',
   no: 'no',
   background: '@background',
-  keyKeyChain: 'ZINGO_SEED_BIRTHDAY',
-  serviceKeyChain: 'ZINGO',
+  keyKeyChain: 'WCASH_WALLET_SEED_BIRTHDAY',
+  serviceKeyChain: 'WCASH_WALLET',
   replyTo: '\nReply to: \n',
   expireBlocks: 40,
   zingolib: 'Zingolib',
@@ -31,8 +31,8 @@ export const GlobalConst = {
   keyStore: 'KeyStore',
   utf8: 'utf8',
   minConfirmations: 3,
-  // Chain code for Zcash — the stable 'ZEC' ticker used as the default
-  // `swapChain` on address-book contacts and to branch the ZEC vs non-ZEC
-  // address validation/scan paths. Single source so it never drifts.
+  // Internal upstream chain code. The visible ticker is WEC; retaining this
+  // key avoids changing the address-book and swap component structure.
+  // It branches native-Wcash vs external-chain validation paths.
   zecSwapChain: 'ZEC',
 };

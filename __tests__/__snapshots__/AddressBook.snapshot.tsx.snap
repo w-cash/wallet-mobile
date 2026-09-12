@@ -830,7 +830,7 @@ exports[`Component Address Book - test Address Book - snapshot 1`] = `
                 }
               }
             >
-              Zcash
+              Wcash
             </Text>
             <
               color="#888888"
@@ -1124,7 +1124,7 @@ exports[`Component Address Book - test Address Book - snapshot 1`] = `
                     }
                   }
                 >
-                  Zcash
+                  Wcash
                 </Text>
                 <Text
                   style={

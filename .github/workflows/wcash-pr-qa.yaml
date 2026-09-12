@@ -1,0 +1,182 @@
+name: Wcash mobile QA
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+
+concurrency:
+  group: wcash-mobile-qa-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  source-and-host-boundary:
+    name: Source parity and host boundary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Wcash mobile
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.18.0
+
+      - name: Install JavaScript dependencies
+        run: |
+          corepack enable
+          yarn install --frozen-lockfile
+
+      - name: Verify exact upstream UI and Wcash identity
+        run: |
+          yarn test --runInBand
+          yarn typecheck
+          yarn lint:check
+          yarn prettier:check
+
+      - name: Install native build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-18 libclang-18-dev cmake protobuf-compiler
+          echo "LIBCLANG_PATH=/usr/lib/llvm-18/lib" >> "$GITHUB_ENV"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+
+      - name: Install bindgen
+        run: cargo install --locked bindgen-cli
+
+      - name: Test the Wcash-only host boundary
+        working-directory: rust
+        run: cargo test --locked -p wcash-mobile-adapter -p wcash-mobile-ffi
+
+  android-boundary:
+    name: Android Wcash boundary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout Wcash mobile
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK
+        run: sdkmanager 'ndk;28.2.13676358'
+
+      - name: Install native build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-18 libclang-18-dev cmake protobuf-compiler
+          echo "LIBCLANG_PATH=/usr/lib/llvm-18/lib" >> "$GITHUB_ENV"
+
+      - name: Set up Rust for Android
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+          key: wcash-android-arm64
+
+      - name: Install Cargo Android tools
+        run: |
+          cargo install --locked bindgen-cli
+          cargo install --locked --version 4.0.1 cargo-ndk
+
+      - name: Generate the Wcash Kotlin contract
+        working-directory: rust
+        run: |
+          cargo run --locked --release --package zingo-uniffi-bindgen \
+            --bin zingo-wallet-uniffi-bindgen -- \
+            generate wcash-mobile-ffi/src/zingo.udl --language kotlin \
+            --no-format --out-dir "$RUNNER_TEMP/wcash-kotlin"
+
+      - name: Compile the Wcash FFI for Android ARM64
+        working-directory: rust
+        env:
+          CARGO_NDK_ANDROID_PLATFORM: 26
+          CARGO_NDK_PLATFORM: 26
+          CFLAGS_aarch64_linux_android: -mno-outline-atomics
+          CXXFLAGS_aarch64_linux_android: -mno-outline-atomics
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
+          export ANDROID_NDK_ROOT="$ANDROID_NDK_HOME"
+          cargo ndk --target aarch64-linux-android build --locked --release \
+            --package wcash-mobile-ffi
+          test -f target/aarch64-linux-android/release/libzingo.so
+          grep -R -q 'setWalletDirectory' "$RUNNER_TEMP/wcash-kotlin"
+
+  ios-boundary:
+    name: iOS Wcash boundary
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - name: Checkout Wcash mobile
+        uses: actions/checkout@v7
+
+      - name: Select Xcode 16.4
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.4'
+
+      - name: Install native build prerequisites
+        run: brew install protobuf
+
+      - name: Set up Rust for the iOS simulator
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios-sim
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+          key: wcash-ios-arm64-simulator
+
+      - name: Install bindgen
+        run: cargo install --locked bindgen-cli
+
+      - name: Generate the Wcash Swift contract
+        working-directory: rust
+        run: |
+          cargo run --locked --release --package zingo-uniffi-bindgen \
+            --bin zingo-wallet-uniffi-bindgen -- \
+            generate wcash-mobile-ffi/src/zingo.udl --language swift \
+            --no-format --out-dir "$RUNNER_TEMP/wcash-swift"
+
+      - name: Compile the Wcash FFI for the iOS ARM64 simulator
+        working-directory: rust
+        env:
+          IPHONEOS_DEPLOYMENT_TARGET: '16.0'
+        run: |
+          simulator_sdk="$(xcrun --sdk iphonesimulator --show-sdk-path)"
+          export BINDGEN_EXTRA_CLANG_ARGS_aarch64_apple_ios_sim="--target=arm64-apple-ios-simulator -isysroot $simulator_sdk"
+          export CFLAGS_aarch64_apple_ios_sim="--target=arm64-apple-ios-simulator -isysroot $simulator_sdk"
+          export CXXFLAGS_aarch64_apple_ios_sim="$CFLAGS_aarch64_apple_ios_sim"
+          cargo build --locked --release --target aarch64-apple-ios-sim \
+            --package wcash-mobile-ffi
+          test -f target/aarch64-apple-ios-sim/release/libzingo.a
+          grep -q 'setWalletDirectory' "$RUNNER_TEMP/wcash-swift/zingo.swift"
+          cp "$RUNNER_TEMP/wcash-swift/zingoFFI.modulemap" \
+            "$RUNNER_TEMP/wcash-swift/module.modulemap"
+          xcrun swiftc -typecheck "$RUNNER_TEMP/wcash-swift/zingo.swift" \
+            -I "$RUNNER_TEMP/wcash-swift"

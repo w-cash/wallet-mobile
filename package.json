@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "android:prod": "react-native run-android --mode prodDebug",
-    "android:beta": "react-native run-android --mode betaDebug --appId org.ZingoLabs.Zingo.Beta --main-activity org.ZingoLabs.Zingo.MainActivity",
+    "android:beta": "react-native run-android --mode betaDebug --appId com.wcashwallet.wallet.beta --main-activity org.ZingoLabs.Zingo.MainActivity",
     "ios": "react-native run-ios",
     "start": "react-native start",
     "storybook:generate": "tsx .storybook/generate.mts",
@@ -21,7 +21,8 @@
     "visual:styled": "yarn build-storybook && yarn visual:capture && VISUAL_STYLE=tokens VISUAL_STORYBOOK=../storybook-static/index.html VISUAL_REPORT=visual/styled.html tsx visual/diff.mts; VISUAL_ROOT=../ VISUAL_PORT=6008 VISUAL_OPEN=http://localhost:6008/visual/styled.html tsx visual/serve.mts",
     "visual:compare": "tsx visual/compare-ref.mts",
     "visual:accept": "tsx visual/accept.mts",
-    "test": "jest --verbose",
+    "test": "node scripts/assert-upstream-ui-parity.mjs && jest --verbose",
+    "test:upstream-ui-parity": "node scripts/assert-upstream-ui-parity.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --fix",
     "lint:check": "eslint .",

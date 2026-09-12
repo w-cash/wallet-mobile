@@ -26,8 +26,8 @@ import RestoreBackupIcon from '../../assets/img/options/restore-backup.svg';
 import SwitchWalletIcon from '../../assets/img/options/switch-wallet.svg';
 import LoadWalletFromSeedBasicIcon from '../../assets/img/options/switch-wallet-basic.svg';
 
-const SOCIAL_X_URL = 'https://x.com/ZingoLabs';
-const SOCIAL_GITHUB_URL = 'https://github.com/zingolabs/zingo-mobile';
+const SOCIAL_X_URL = 'https://x.com/wcash_';
+const SOCIAL_GITHUB_URL = 'https://github.com/w-cash/wallet-mobile';
 
 // Legacy `menu.*` testID slugs, kept stable across the drawer→OptionsPanel
 // migration so existing Maestro flows (.maestro/*.yaml) and the detox

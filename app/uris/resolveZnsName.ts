@@ -16,6 +16,9 @@ import { ChainNameEnum } from '@app/AppState';
 
 const RESOLVE_TIMEOUT_MS = 5000;
 const ZNS_SUFFIX = '.zcash';
+// Wcash has no reviewed name-service registry. Keep the upstream send-field
+// structure, but never query or accept a Zcash alias in a Wcash build.
+const WCASH_NAME_SERVICE_AVAILABLE = false;
 
 export type ZnsResolution =
   | { ok: true; address: string }
@@ -52,6 +55,9 @@ const ZNS_NAME = /^[a-z0-9]{1,62}$/;
 
 /** True when `text` reads as a ZNS alias, e.g. "alice.zcash". */
 export const isZnsAlias = (text: string): boolean => {
+  if (!WCASH_NAME_SERVICE_AVAILABLE) {
+    return false;
+  }
   const trimmed = text.trim().toLowerCase();
   return (
     trimmed.endsWith(ZNS_SUFFIX) &&
@@ -70,6 +76,9 @@ export const resolveZnsName = async (
   alias: string,
   chainName: ChainNameEnum,
 ): Promise<ZnsResolution> => {
+  if (!WCASH_NAME_SERVICE_AVAILABLE) {
+    return { ok: false, reason: 'unsupported-chain' };
+  }
   // A name the protocol would refuse cannot be registered, so it resolves to
   // nothing rather than being worth a round trip.
   if (!isZnsAlias(alias)) {

@@ -34,7 +34,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>zcash</string>
+				<string>wcash</string>
 			</array>
 		</dict>
 	</array>
@@ -43,7 +43,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationQueriesSchemes</key>
-	<string>zcash</string>
+	<string>wcash</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0.0</string>
 	<key>LSRequiresIPhoneOS</key>
@@ -56,13 +56,13 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Zingo needs access to the camera to scan address QRCodes</string>
+	<string>Wcash Wallet needs access to the camera to scan address QRCodes</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Allow Zingo to use FaceID to improve the security and privacy?</string>
+	<string>Allow Wcash Wallet to use FaceID to improve the security and privacy?</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Zingo does not use any Location Features</string>
+	<string>Wcash Wallet does not use any Location Features</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Zingo export/share address QRCodes as images</string>
+	<string>Wcash Wallet export/share address QRCodes as images</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

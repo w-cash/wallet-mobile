@@ -242,10 +242,8 @@ export default function LoadingApp(props: LoadingAppProps) {
         }
       }
 
-      // new donation feature.
-      if (settings.firstInstall || settings.firstUpdateWithDonation) {
-        setDonationAlert(true);
-      }
+      // No Wcash donation address has been approved for this build.
+      setDonationAlert(false);
 
       // first I need to know if this launch is a fresh install...
       // if firstInstall is true -> 100% is the first time.
