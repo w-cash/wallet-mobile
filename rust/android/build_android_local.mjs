@@ -191,9 +191,13 @@ for (const abi of abis) {
 
   const abiEnv = { ...env, CARGO_FEATURE_STD: featureStd ? 'true' : 'false' };
 
-  run('cargo', ['ndk', '--target', triple, 'build', '--release'], {
-    env: abiEnv,
-  });
+  run(
+    'cargo',
+    ['ndk', '--target', triple, 'build', '--release', '--package', 'wcash-mobile-ffi'],
+    {
+      env: abiEnv,
+    },
+  );
 
   const soPath = join(TARGET_DIR, triple, 'release', 'libzingo.so');
   run(join(NDK_TOOLCHAIN, `llvm-strip${exe}`), ['--strip-all', soPath], {

@@ -23,6 +23,7 @@ if (process.platform !== 'darwin') {
 const IOS_DIR = dirname(fileURLToPath(import.meta.url));
 const RUST_DIR = resolve(IOS_DIR, '..');
 const LIB_DIR = join(RUST_DIR, 'lib');
+const WCASH_FFI_DIR = join(RUST_DIR, 'wcash-mobile-ffi');
 const TARGET_DIR = join(RUST_DIR, 'target');
 const REPO_IOS_DIR = resolve(RUST_DIR, '..', 'ios');
 
@@ -66,13 +67,17 @@ if (!capture('bindgen', ['--version'])) {
 // 1. Generate uniffi Swift bindings (also produces the C header + modulemap)
 process.chdir(LIB_DIR);
 run('cargo', [
-  'run', '--release', '--bin', 'uniffi-bindgen',
-  'generate', './src/zingo.udl', '--language', 'swift', '--out-dir', './Generated',
+  'run', '--release', '--package', 'zingo-uniffi-bindgen',
+  '--bin', 'zingo-wallet-uniffi-bindgen', '--',
+  'generate', '../wcash-mobile-ffi/src/zingo.udl', '--language', 'swift', '--out-dir', './Generated',
 ], { env });
 
 // 2. Build cargo for the 3 targets
 for (const target of [DEVICE_TARGET, ...SIM_TARGETS]) {
-  run('cargo', ['build', '--release', '--target', target], { env });
+  run('cargo', ['build', '--release', '--target', target, '--package', 'wcash-mobile-ffi'], {
+    env,
+    cwd: WCASH_FFI_DIR,
+  });
 }
 
 // 3. Lipo the 2 simulator targets into one fat .a

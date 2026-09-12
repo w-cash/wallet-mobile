@@ -1,0 +1,24 @@
+[package]
+name = "wcash-mobile-adapter"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "MIT"
+
+[features]
+default = ["regtest"]
+regtest = ["zingolib/regtest"]
+
+[dependencies]
+bip0039 = { workspace = true }
+secrecy = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+thiserror = { workspace = true }
+wcash-wallet = { workspace = true }
+zingolib = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true }

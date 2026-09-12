@@ -1,0 +1,24 @@
+[package]
+name = "wcash-mobile-ffi"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "MIT"
+
+[dependencies]
+once_cell = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+uniffi = { workspace = true }
+wcash-mobile-adapter = { path = "../wcash-mobile-adapter" }
+
+[build-dependencies]
+uniffi_build = { workspace = true, features = ["builtin-bindgen"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+name = "zingo"

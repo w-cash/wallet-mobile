@@ -17,6 +17,8 @@ WORKDIR /opt/zingo/rust/lib/
 COPY android/ /opt/zingo/rust/android/
 COPY ios/ /opt/zingo/rust/ios/
 COPY lib/ /opt/zingo/rust/lib/
+COPY wcash-mobile-adapter/ /opt/zingo/rust/wcash-mobile-adapter/
+COPY wcash-mobile-ffi/ /opt/zingo/rust/wcash-mobile-ffi/
 COPY Cargo.lock /opt/zingo/rust/Cargo.lock
 COPY Cargo.toml /opt/zingo/rust/Cargo.toml
 COPY zingomobile_utils/ /opt/zingo/rust/zingomobile_utils/
@@ -34,8 +36,9 @@ RUN rustup default stable
 
 RUN cargo install --force --locked bindgen-cli
 
-RUN cargo run --release --features=uniffi/cli --bin uniffi-bindgen \
-    generate ./src/zingo.udl --language kotlin \ 
+RUN cargo run --release --package zingo-uniffi-bindgen \
+    --bin zingo-wallet-uniffi-bindgen -- \
+    generate ../wcash-mobile-ffi/src/zingo.udl --language kotlin \
     --out-dir ./src
 
 RUN cargo install --version 4.0.1 cargo-ndk
@@ -55,7 +58,7 @@ ENV CC=aarch64-linux-android26-clang
 
 ENV CFLAGS_aarch64_linux_android="-mno-outline-atomics"
 ENV CXXFLAGS_aarch64_linux_android="-mno-outline-atomics"
-RUN cargo ndk --target aarch64-linux-android build --release
+RUN cargo ndk --target aarch64-linux-android build --release --package wcash-mobile-ffi
 RUN llvm-strip --strip-all ../target/aarch64-linux-android/release/libzingo.so
 RUN llvm-objcopy \
     --remove-section .comment \
@@ -66,7 +69,7 @@ RUN sha256sum ../target/aarch64-linux-android/release/libzingo.so
 ENV CARGO_FEATURE_STD=false
 ENV CC=armv7a-linux-androideabi26-clang
 
-RUN cargo ndk --target armv7-linux-androideabi build --release
+RUN cargo ndk --target armv7-linux-androideabi build --release --package wcash-mobile-ffi
 RUN llvm-strip --strip-all ../target/armv7-linux-androideabi/release/libzingo.so
 RUN llvm-objcopy \
     --remove-section .comment \
@@ -78,7 +81,7 @@ ENV CARGO_FEATURE_STD=false
 ENV CC=i686-linux-android26-clang
 
 #-DBROKEN_CLANG_ATOMICS
-RUN cargo ndk --target i686-linux-android build --release
+RUN cargo ndk --target i686-linux-android build --release --package wcash-mobile-ffi
 RUN llvm-strip --strip-all ../target/i686-linux-android/release/libzingo.so
 RUN llvm-objcopy \
     --remove-section .comment \
@@ -89,7 +92,7 @@ RUN sha256sum ../target/i686-linux-android/release/libzingo.so
 ENV CARGO_FEATURE_STD=false
 ENV CC=x86_64-linux-android26-clang
 
-RUN cargo ndk --target x86_64-linux-android build --release
+RUN cargo ndk --target x86_64-linux-android build --release --package wcash-mobile-ffi
 RUN llvm-strip --strip-all ../target/x86_64-linux-android/release/libzingo.so
 RUN llvm-objcopy \
     --remove-section .comment \
@@ -137,4 +140,3 @@ RUN cargo ndk --target x86_64-linux-android build --release --package zingo-nym-
 RUN llvm-strip --strip-all target/x86_64-linux-android/release/$SHIM
 RUN llvm-objcopy --remove-section .comment target/x86_64-linux-android/release/$SHIM
 RUN sha256sum target/x86_64-linux-android/release/$SHIM
-

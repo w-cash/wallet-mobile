@@ -19,6 +19,13 @@ import org.ZingoLabs.Zingo.Constants.*
 class RPCModule internal constructor(private val reactContext: ReactApplicationContext?) : ReactContextBaseJavaModule(reactContext) {
     private val applicationContext: Context = reactContext?.applicationContext ?: MainApplication.getAppContext()!!
 
+    init {
+        // This call exists only in the Wcash UniFFI crate. It is both the
+        // writable SQLite location and a link-time assertion that this app
+        // cannot be packaged with the upstream Zcash FFI by mistake.
+        uniffi.zingo.setWalletDirectory(applicationContext.filesDir.absolutePath)
+    }
+
     override fun getName(): String {
         return "RPCModule"
     }
