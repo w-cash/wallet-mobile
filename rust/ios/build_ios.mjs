@@ -63,8 +63,6 @@ for (const stale of [
   rmSync(join(REPO_IOS_DIR, stale), { force: true });
 }
 
-run('rustup', ['default', 'stable'], { env });
-
 if (!capture('bindgen', ['--version'])) {
   run('cargo', ['install', '--force', '--locked', 'bindgen-cli'], { env });
 }

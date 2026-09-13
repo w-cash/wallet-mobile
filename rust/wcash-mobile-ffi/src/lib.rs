@@ -717,7 +717,10 @@ pub fn enable_mixnet(_proxy_path: String) -> Result<String, ZingolibError> {
     Err(unsupported("mixnet transport"))
 }
 
-unsupported_string_fn!(disable_mixnet, "mixnet transport");
+pub fn disable_mixnet() -> Result<String, ZingolibError> {
+    Ok(serde_json::json!({ "mixnet_indicator": "off" }).to_string())
+}
+
 unsupported_string_fn!(mixnet_indicator, "mixnet status");
 unsupported_string_fn!(mixnet_bootstrap_detail, "mixnet bootstrap detail");
 
@@ -746,6 +749,11 @@ mod tests {
     fn unsupported_surfaces_never_look_like_success() {
         let error = get_messages(String::new()).expect_err("memo history is unavailable");
         assert!(error.to_string().contains("unsupported Wcash feature"));
+    }
+
+    #[test]
+    fn disable_mixnet_reports_the_inactive_transport() {
+        assert_eq!(disable_mixnet().unwrap(), r#"{"mixnet_indicator":"off"}"#);
     }
 
     #[test]

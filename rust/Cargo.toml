@@ -16,13 +16,13 @@ exclude = ["lib", "nym-proxy-ffi"]
 resolver = "2"
 
 [workspace.dependencies]
-zingolib = { git = "https://github.com/w-cash/wallet-core.git", rev = "d10113e19c712a403c1b68947c2186e97f61f854", features = [
+zingolib = { git = "https://github.com/w-cash/wallet-core.git", rev = "5f4e0b45bad15facb5f84ac6217cb5287101bf96", features = [
     "perspective",
 ] }
-pepper-sync = { git = "https://github.com/w-cash/wallet-core.git", rev = "d10113e19c712a403c1b68947c2186e97f61f854" }
-zingolib_testutils = { git = "https://github.com/w-cash/wallet-core.git", rev = "d10113e19c712a403c1b68947c2186e97f61f854" }
-wcash-wallet = { git = "https://github.com/w-cash/wolf.git", rev = "168b59310056964a6347ed993ace8f8d1385cde1" }
-regchest_utils = { git = "https://github.com/zingolabs/zingo-regchest", branch = "dev" }
+pepper-sync = { git = "https://github.com/w-cash/wallet-core.git", rev = "5f4e0b45bad15facb5f84ac6217cb5287101bf96" }
+zingolib_testutils = { git = "https://github.com/w-cash/wallet-core.git", rev = "5f4e0b45bad15facb5f84ac6217cb5287101bf96" }
+wcash-wallet = { git = "https://github.com/w-cash/wolf.git", rev = "f2486f65a6508771eafc634223344499ac23c5a5" }
+regchest_utils = { git = "https://github.com/zingolabs/zingo-regchest", rev = "4ae67cc9f347077504245dc0082d192db95ac467" }
 zingomobile_utils = { path = "zingomobile_utils" }
 
 zcash_address = "0.13.0"
@@ -75,9 +75,9 @@ debug = 1
 [patch.crates-io]
 # Wcash consensus domains and transaction parsing. These immutable revisions
 # match the selection audited by wallet-core and wolf.
-pczt = { git = "https://github.com/w-cash/wolf.git", rev = "9a9c0668784117f116d5b69bdb3a090765092343" }
-zcash_primitives = { git = "https://github.com/w-cash/wolf.git", rev = "9a9c0668784117f116d5b69bdb3a090765092343" }
-zcash_protocol = { git = "https://github.com/w-cash/wolf.git", rev = "9a9c0668784117f116d5b69bdb3a090765092343" }
+pczt = { git = "https://github.com/w-cash/wolf.git", rev = "f2486f65a6508771eafc634223344499ac23c5a5" }
+zcash_primitives = { git = "https://github.com/w-cash/wolf.git", rev = "f2486f65a6508771eafc634223344499ac23c5a5" }
+zcash_protocol = { git = "https://github.com/w-cash/wolf.git", rev = "f2486f65a6508771eafc634223344499ac23c5a5" }
 # Ironwood (NU6.3) proto fields (CompactTx.ironwoodActions, TreeState.ironwoodTree,
 # ShieldedProtocol.ironwood, ChainMetadata.ironwoodCommitmentTreeSize). Must match
 # the patch in zingolib (feat/ironwood) so the dependency graph resolves to a single

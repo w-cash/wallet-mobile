@@ -2602,7 +2602,7 @@ dependencies = [
 [[package]]
 name = "pczt"
 version = "0.9.3"
-source = "git+https://github.com/w-cash/wolf.git?rev=9a9c0668784117f116d5b69bdb3a090765092343#9a9c0668784117f116d5b69bdb3a090765092343"
+source = "git+https://github.com/w-cash/wolf.git?rev=f2486f65a6508771eafc634223344499ac23c5a5#f2486f65a6508771eafc634223344499ac23c5a5"
 dependencies = [
  "blake2b_simd",
  "bls12_381",
@@ -2638,7 +2638,7 @@ dependencies = [
 [[package]]
 name = "pepper-sync"
 version = "0.5.0"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=5f4e0b45bad15facb5f84ac6217cb5287101bf96#5f4e0b45bad15facb5f84ac6217cb5287101bf96"
 dependencies = [
  "bip32",
  "byteorder",
@@ -3164,7 +3164,7 @@ dependencies = [
 [[package]]
 name = "regchest_utils"
 version = "0.1.0"
-source = "git+https://github.com/zingolabs/zingo-regchest?branch=dev#4ae67cc9f347077504245dc0082d192db95ac467"
+source = "git+https://github.com/zingolabs/zingo-regchest?rev=4ae67cc9f347077504245dc0082d192db95ac467#4ae67cc9f347077504245dc0082d192db95ac467"
 dependencies = [
  "bollard",
  "futures",
@@ -3348,12 +3348,6 @@ dependencies = [
 [[package]]
 name = "rustios"
 version = "2.0.0"
-dependencies = [
- "regchest_utils",
- "tokio",
- "zingolib_testutils",
- "zingomobile_utils",
-]
 
 [[package]]
 name = "rustix"
@@ -4950,7 +4944,7 @@ dependencies = [
 [[package]]
 name = "wcash-genesis"
 version = "0.1.0"
-source = "git+https://github.com/w-cash/wolf.git?rev=168b59310056964a6347ed993ace8f8d1385cde1#168b59310056964a6347ed993ace8f8d1385cde1"
+source = "git+https://github.com/w-cash/wolf.git?rev=f2486f65a6508771eafc634223344499ac23c5a5#f2486f65a6508771eafc634223344499ac23c5a5"
 dependencies = [
  "blake2b_simd",
  "sha2 0.10.9",
@@ -4990,7 +4984,7 @@ dependencies = [
 [[package]]
 name = "wcash-wallet"
 version = "0.1.0"
-source = "git+https://github.com/w-cash/wolf.git?rev=168b59310056964a6347ed993ace8f8d1385cde1#168b59310056964a6347ed993ace8f8d1385cde1"
+source = "git+https://github.com/w-cash/wolf.git?rev=f2486f65a6508771eafc634223344499ac23c5a5#f2486f65a6508771eafc634223344499ac23c5a5"
 dependencies = [
  "async-trait",
  "blake2b_simd",
@@ -5560,7 +5554,7 @@ dependencies = [
 [[package]]
 name = "zcash_primitives"
 version = "0.30.1"
-source = "git+https://github.com/w-cash/wolf.git?rev=9a9c0668784117f116d5b69bdb3a090765092343#9a9c0668784117f116d5b69bdb3a090765092343"
+source = "git+https://github.com/w-cash/wolf.git?rev=f2486f65a6508771eafc634223344499ac23c5a5#f2486f65a6508771eafc634223344499ac23c5a5"
 dependencies = [
  "blake2b_simd",
  "block-buffer 0.11.0-rc.3",
@@ -5614,7 +5608,7 @@ dependencies = [
 [[package]]
 name = "zcash_protocol"
 version = "0.10.5"
-source = "git+https://github.com/w-cash/wolf.git?rev=9a9c0668784117f116d5b69bdb3a090765092343#9a9c0668784117f116d5b69bdb3a090765092343"
+source = "git+https://github.com/w-cash/wolf.git?rev=f2486f65a6508771eafc634223344499ac23c5a5#f2486f65a6508771eafc634223344499ac23c5a5"
 dependencies = [
  "corez",
  "document-features",
@@ -5677,7 +5671,7 @@ dependencies = [
 [[package]]
 name = "zebra-chain"
 version = "12.0.0"
-source = "git+https://github.com/w-cash/wolf.git?rev=168b59310056964a6347ed993ace8f8d1385cde1#168b59310056964a6347ed993ace8f8d1385cde1"
+source = "git+https://github.com/w-cash/wolf.git?rev=f2486f65a6508771eafc634223344499ac23c5a5#f2486f65a6508771eafc634223344499ac23c5a5"
 dependencies = [
  "bech32",
  "bitflags",
@@ -5839,7 +5833,7 @@ source = "git+https://github.com/zingolabs/infrastructure.git?rev=89cf104a241614
 [[package]]
 name = "zingo-memo"
 version = "0.1.1"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=5f4e0b45bad15facb5f84ac6217cb5287101bf96#5f4e0b45bad15facb5f84ac6217cb5287101bf96"
 dependencies = [
  "zcash_address",
  "zcash_encoding",
@@ -5850,7 +5844,7 @@ dependencies = [
 [[package]]
 name = "zingo-net-diag"
 version = "0.1.0"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=5f4e0b45bad15facb5f84ac6217cb5287101bf96#5f4e0b45bad15facb5f84ac6217cb5287101bf96"
 dependencies = [
  "serde",
 ]
@@ -5858,7 +5852,7 @@ dependencies = [
 [[package]]
 name = "zingo-netutils"
 version = "5.0.1"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=5f4e0b45bad15facb5f84ac6217cb5287101bf96#5f4e0b45bad15facb5f84ac6217cb5287101bf96"
 dependencies = [
  "http",
  "lightwallet-protocol",
@@ -5874,7 +5868,7 @@ dependencies = [
 [[package]]
 name = "zingo-price"
 version = "0.1.0"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=5f4e0b45bad15facb5f84ac6217cb5287101bf96#5f4e0b45bad15facb5f84ac6217cb5287101bf96"
 dependencies = [
  "byteorder",
  "zcash_encoding",
@@ -5883,7 +5877,7 @@ dependencies = [
 [[package]]
 name = "zingo-status"
 version = "0.2.1"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=5f4e0b45bad15facb5f84ac6217cb5287101bf96#5f4e0b45bad15facb5f84ac6217cb5287101bf96"
 dependencies = [
  "byteorder",
  "zcash_protocol",
@@ -5914,7 +5908,7 @@ source = "git+https://github.com/zingolabs/infrastructure.git?rev=89cf104a241614
 [[package]]
 name = "zingolib"
 version = "6.0.0"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=5f4e0b45bad15facb5f84ac6217cb5287101bf96#5f4e0b45bad15facb5f84ac6217cb5287101bf96"
 dependencies = [
  "append-only-vec",
  "bech32",
@@ -5975,7 +5969,7 @@ dependencies = [
 [[package]]
 name = "zingolib_testutils"
 version = "0.1.0"
-source = "git+https://github.com/w-cash/wallet-core.git?rev=d10113e19c712a403c1b68947c2186e97f61f854#d10113e19c712a403c1b68947c2186e97f61f854"
+source = "git+https://github.com/w-cash/wallet-core.git?rev=5f4e0b45bad15facb5f84ac6217cb5287101bf96#5f4e0b45bad15facb5f84ac6217cb5287101bf96"
 dependencies = [
  "http",
  "nonempty",

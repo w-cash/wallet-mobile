@@ -63,7 +63,7 @@ const gitDescribe =
     '--always',
     '--long',
     '--match',
-    'zingo-*',
+    'wcash-*',
   ]) ?? '';
 
 console.log('=== Building Docker image ===');

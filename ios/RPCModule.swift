@@ -185,13 +185,19 @@ class RPCModule: NSObject {
     try fm.createDirectory(
       at: directory,
       withIntermediateDirectories: true,
-      attributes: [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication]
+      attributes: [
+        .protectionKey: FileProtectionType.completeUntilFirstUserAuthentication,
+        .posixPermissions: 0o700,
+      ]
     )
     var resourceValues = URLResourceValues()
     resourceValues.isExcludedFromBackup = true
     try directory.setResourceValues(resourceValues)
     try fm.setAttributes(
-      [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+      [
+        .protectionKey: FileProtectionType.completeUntilFirstUserAuthentication,
+        .posixPermissions: 0o700,
+      ],
       ofItemAtPath: directory.path
     )
     return directory.path

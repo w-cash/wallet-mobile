@@ -44,6 +44,7 @@ ios/zingo.swift
 ios/zingo_nym_proxy_ffi.swift
 rust/lib/Generated/zingo.swift
 rust/lib/Generated/zingoFFI.h
+rust/wcash-mobile-ffi/Generated/
 rust/nym-host/Generated/
 rust/nym-proxy-ffi/Generated/
 rust/lib/Generated/zingoFFI.modulemap
@@ -93,7 +94,6 @@ buck-out/
 
 # CocoaPods
 **/Pods/
-/ios/Podfile.lock
 
 # e2e test logs
 30_ga_64-15860.log

@@ -99,6 +99,39 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+val signingKeys = listOf("KEYSTORE_PASSWORD", "KEY_ALIAS", "KEY_PASSWORD")
+val environmentSigning = signingKeys.map(System::getenv)
+val localSigning = signingKeys.map(keystoreProperties::getProperty)
+val environmentSigningCount = environmentSigning.count { !it.isNullOrBlank() }
+val localSigningCount = localSigning.count { !it.isNullOrBlank() }
+
+if (environmentSigningCount in 1 until signingKeys.size) {
+    throw GradleException("Set KEYSTORE_PASSWORD, KEY_ALIAS, and KEY_PASSWORD together")
+}
+if (environmentSigningCount == 0 && localSigningCount in 1 until signingKeys.size) {
+    throw GradleException("Set KEYSTORE_PASSWORD, KEY_ALIAS, and KEY_PASSWORD together in local.zingo.jks.properties")
+}
+
+val releaseSigning = when {
+    environmentSigningCount == signingKeys.size -> environmentSigning
+    localSigningCount == signingKeys.size -> localSigning
+    else -> null
+}
+val releaseKeystore = file("Zingo.jks")
+val releasePackageTaskName = Regex("(?i)(assemble|bundle|install|package|publish).*Release.*")
+
+gradle.taskGraph.whenReady {
+    val buildsReleasePackage = allTasks.any { task ->
+        task.project == project && task.name.matches(releasePackageTaskName)
+    }
+    if (buildsReleasePackage && releaseSigning == null) {
+        throw GradleException("A production release requires the Wcash release keystore credentials")
+    }
+    if (buildsReleasePackage && !releaseKeystore.isFile) {
+        throw GradleException("The Wcash release keystore is missing at ${releaseKeystore.path}")
+    }
+}
+
 android {
     ndkVersion = rootProject.extra["ndkVersion"] as String
 
@@ -193,24 +226,11 @@ android {
             keyPassword = "android"
         }
         create("release") {
-            if (System.getenv("KEYSTORE_PASSWORD") != null) {
-                println("****** ENV SIGNING APK ******")
-                storeFile = file("Zingo.jks")
-                storePassword = System.getenv("KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("KEY_ALIAS")
-                keyPassword = System.getenv("KEY_PASSWORD")
-            } else if (keystoreProperties.getProperty("KEYSTORE_PASSWORD") != null) {
-                println("****** LOCAL SIGNING APK ******")
-                storeFile = file("Zingo.jks")
-                storePassword = keystoreProperties.getProperty("KEYSTORE_PASSWORD")
-                keyAlias = keystoreProperties.getProperty("KEY_ALIAS")
-                keyPassword = keystoreProperties.getProperty("KEY_PASSWORD")
-            } else {
-                println("****** DEBUG SIGNING APK ******")
-                storeFile = file("debug.keystore")
-                storePassword = "android"
-                keyAlias = "androiddebugkey"
-                keyPassword = "android"
+            if (releaseSigning != null) {
+                storeFile = releaseKeystore
+                storePassword = releaseSigning[0]
+                keyAlias = releaseSigning[1]
+                keyPassword = releaseSigning[2]
             }
         }
     }
@@ -220,9 +240,9 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
         getByName("release") {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig = signingConfigs.getByName("release")
+            if (releaseSigning != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             // this may cause problems
             //vcsInfo.include false
             isMinifyEnabled = enableProguardInReleaseBuilds
