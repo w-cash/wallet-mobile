@@ -1,344 +1,77 @@
-#[cfg(not(feature = "regchest"))]
-use zingolib_testutils::scenarios;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Output};
 
-// ubuntu ci runner
-//#[cfg(all(feature = "ci", feature = "regchest"))]
-//const MAC_SOCKET: Option<&str> = Some("/var/run/docker.sock");
-
-// macos ci runner
-#[cfg(all(feature = "ci", feature = "regchest"))]
-const MAC_SOCKET: Option<&str> = Some("unix:///Users/runner/.colima/default/docker.sock");
-
-async fn execute_version_from_seed() {
-    #[cfg(not(feature = "regchest"))]
-    let _local_net = scenarios::funded_orchard_mobileclient(1_000_000).await;
-    #[cfg(feature = "regchest")]
-    let docker = match regchest_utils::launch(MAC_SOCKET, Some("funded_orchard_mobileclient")).await
-    {
-        Ok(d) => d,
-        Err(e) => panic!("Failed to launch regchest docker container: {:?}", e),
-    };
-
-    #[cfg(not(feature = "ci"))]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test("ZingoTests/ExecuteVersionFromSeed");
-    #[cfg(feature = "ci")]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test_ci("ZingoTests/ExecuteVersionFromSeed");
-
-    #[cfg(feature = "regchest")]
-    match regchest_utils::close(&docker).await {
-        Ok(_) => (),
-        Err(e) => panic!("Failed to close regchest docker container: {:?}", e),
-    }
-
-    println!("Exit Code: {}", exit_code);
-    println!("Output: {}", output);
-    println!("Error: {}", error);
-
-    assert_eq!(exit_code, 0);
+fn repository_root() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .unwrap()
 }
 
-async fn execute_addresses_from_ufvk() {
-    #[cfg(not(feature = "regchest"))]
-    let _local_net = scenarios::funded_orchard_mobileclient(1_000_000).await;
-    #[cfg(feature = "regchest")]
-    let docker = match regchest_utils::launch(MAC_SOCKET, Some("funded_orchard_mobileclient")).await
-    {
-        Ok(d) => d,
-        Err(e) => panic!("Failed to launch regchest docker container: {:?}", e),
-    };
-
-    #[cfg(not(feature = "ci"))]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test("ZingoTests/ExecuteAddressesFromUfvk");
-    #[cfg(feature = "ci")]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test_ci("ZingoTests/ExecuteAddressesFromUfvk");
-
-    #[cfg(feature = "regchest")]
-    match regchest_utils::close(&docker).await {
-        Ok(_) => (),
-        Err(e) => panic!("Failed to close regchest docker container: {:?}", e),
+fn test_script() -> &'static str {
+    if cfg!(feature = "ci") {
+        "scripts/ci/ios_integration_tests_ci.sh"
+    } else {
+        "scripts/ios_integration_tests.sh"
     }
-
-    println!("Exit Code: {}", exit_code);
-    println!("Output: {}", output);
-    println!("Error: {}", error);
-
-    assert_eq!(exit_code, 0);
 }
 
-async fn execute_addresses_from_seed() {
-    #[cfg(not(feature = "regchest"))]
-    let _local_net = scenarios::funded_orchard_mobileclient(1_000_000).await;
-    #[cfg(feature = "regchest")]
-    let docker = match regchest_utils::launch(MAC_SOCKET, Some("funded_orchard_mobileclient")).await
-    {
-        Ok(d) => d,
-        Err(e) => panic!("Failed to launch regchest docker container: {:?}", e),
-    };
-
-    #[cfg(not(feature = "ci"))]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test("ZingoTests/ExecuteAddressesFromSeed");
-    #[cfg(feature = "ci")]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test_ci("ZingoTests/ExecuteAddressesFromSeed");
-
-    #[cfg(feature = "regchest")]
-    match regchest_utils::close(&docker).await {
-        Ok(_) => (),
-        Err(e) => panic!("Failed to close regchest docker container: {:?}", e),
-    }
-
-    println!("Exit Code: {}", exit_code);
-    println!("Output: {}", output);
-    println!("Error: {}", error);
-
-    assert_eq!(exit_code, 0);
+fn run_xctest(arguments: &[&str]) -> Output {
+    Command::new(repository_root().join(test_script()))
+        .args(arguments)
+        .current_dir(repository_root())
+        .output()
+        .unwrap()
 }
 
-async fn execute_sync_from_seed() {
-    #[cfg(not(feature = "regchest"))]
-    let _local_net = scenarios::funded_orchard_mobileclient(1_000_000).await;
-    #[cfg(feature = "regchest")]
-    let docker = match regchest_utils::launch(MAC_SOCKET, Some("funded_orchard_mobileclient")).await
-    {
-        Ok(d) => d,
-        Err(e) => panic!("Failed to launch regchest docker container: {:?}", e),
-    };
-
-    #[cfg(not(feature = "ci"))]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test("ZingoTests/ExecuteSyncFromSeed");
-    #[cfg(feature = "ci")]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test_ci("ZingoTests/ExecuteSyncFromSeed");
-
-    #[cfg(feature = "regchest")]
-    match regchest_utils::close(&docker).await {
-        Ok(_) => (),
-        Err(e) => panic!("Failed to close regchest docker container: {:?}", e),
-    }
-
-    println!("Exit Code: {}", exit_code);
-    println!("Output: {}", output);
-    println!("Error: {}", error);
-
-    assert_eq!(exit_code, 0);
-}
-
-async fn execute_send_from_orchard() {
-    #[cfg(not(feature = "regchest"))]
-    let _local_net = scenarios::funded_orchard_mobileclient(1_000_000).await;
-    #[cfg(feature = "regchest")]
-    let docker = match regchest_utils::launch(MAC_SOCKET, Some("funded_orchard_mobileclient")).await
-    {
-        Ok(d) => d,
-        Err(e) => panic!("Failed to launch regchest docker container: {:?}", e),
-    };
-
-    #[cfg(not(feature = "ci"))]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test("ZingoTests/ExecuteSendFromOrchard");
-    #[cfg(feature = "ci")]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test_ci("ZingoTests/ExecuteSendFromOrchard");
-
-    #[cfg(feature = "regchest")]
-    match regchest_utils::close(&docker).await {
-        Ok(_) => (),
-        Err(e) => panic!("Failed to close regchest docker container: {:?}", e),
-    }
-
-    println!("Exit Code: {}", exit_code);
-    println!("Output: {}", output);
-    println!("Error: {}", error);
-
-    assert_eq!(exit_code, 0);
-}
-
-async fn execute_currentprice_and_value_transfers_from_seed() {
-    #[cfg(not(feature = "regchest"))]
-    let _local_net = scenarios::funded_orchard_with_3_txs_mobileclient(1_000_000).await;
-    #[cfg(feature = "regchest")]
-    let docker =
-        match regchest_utils::launch(MAC_SOCKET, Some("funded_orchard_with_3_txs_mobileclient"))
-            .await
-        {
-            Ok(d) => d,
-            Err(e) => panic!("Failed to launch regchest docker container: {:?}", e),
-        };
-
-    #[cfg(not(feature = "ci"))]
-    let (exit_code, output, error) = zingomobile_utils::ios_integration_test(
-        "ZingoTests/UpdateCurrentPriceAndValueTransfersFromSeed",
+fn require_success(run: Output) {
+    assert!(
+        run.status.success(),
+        "iOS XCTest failed\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&run.stdout),
+        String::from_utf8_lossy(&run.stderr)
     );
-    #[cfg(feature = "ci")]
-    let (exit_code, output, error) = zingomobile_utils::ios_integration_test_ci(
-        "ZingoTests/UpdateCurrentPriceAndValueTransfersFromSeed",
-    );
-
-    #[cfg(feature = "regchest")]
-    match regchest_utils::close(&docker).await {
-        Ok(_) => (),
-        Err(e) => panic!("Failed to close regchest docker container: {:?}", e),
-    }
-
-    println!("Exit Code: {}", exit_code);
-    println!("Output: {}", output);
-    println!("Error: {}", error);
-
-    assert_eq!(exit_code, 0);
 }
 
-async fn execute_sapling_balance_from_seed() {
-    #[cfg(not(feature = "regchest"))]
-    let _local_net =
-        scenarios::funded_orchard_sapling_transparent_shielded_mobileclient(1_000_000).await;
-    #[cfg(feature = "regchest")]
-    let docker = match regchest_utils::launch(
-        MAC_SOCKET,
-        Some("funded_orchard_sapling_transparent_shielded_mobileclient"),
-    )
-    .await
-    {
-        Ok(d) => d,
-        Err(e) => panic!("Failed to launch regchest docker container: {:?}", e),
-    };
-
-    #[cfg(not(feature = "ci"))]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test("ZingoTests/ExecuteSaplingBalanceFromSeed");
-    #[cfg(feature = "ci")]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test_ci("ZingoTests/ExecuteSaplingBalanceFromSeed");
-
-    #[cfg(feature = "regchest")]
-    match regchest_utils::close(&docker).await {
-        Ok(_) => (),
-        Err(e) => panic!("Failed to close regchest docker container: {:?}", e),
+#[test]
+fn ios_sources_select_the_wcash_regtest_boundary() {
+    let root = repository_root();
+    let swift = fs::read_to_string(root.join("ios/ZingoTests/ZingoTest.swift")).unwrap();
+    let required = [
+        "http://127.0.0.1:48234",
+        concat!("w", "u", "regtest1"),
+        "c3a6678a",
+        "TWC",
+        "throw XCTSkip",
+    ];
+    for token in required {
+        assert!(swift.contains(token), "the iOS suite is missing {token}");
+    }
+    for token in [
+        "http://10.0.2.2:20000",
+        "http://127.0.0.1:20000",
+        "uviewregtest1",
+        "texregtest1",
+        "t1dUDJ62",
+        "u1gsqvq",
+    ] {
+        assert!(!swift.contains(token), "the iOS suite contains {token}");
     }
 
-    println!("Exit Code: {}", exit_code);
-    println!("Output: {}", output);
-    println!("Error: {}", error);
-
-    assert_eq!(exit_code, 0);
+    let plist = fs::read_to_string(root.join("ios/Zingo/Info.plist")).unwrap();
+    assert!(plist.contains("<string>LaunchScreen</string>"));
+    assert!(root.join("ios/Zingo/LaunchScreen.storyboard").is_file());
 }
 
-async fn execute_parse_address_for_tex() {
-    // Address parsing only needs a reachable server with nonzero height,
-    // so the cheap scenario suffices; the multi-pool funded scenario
-    // costs ~150s more of regtest setup per test.
-    #[cfg(not(feature = "regchest"))]
-    let _local_net = scenarios::funded_orchard_mobileclient(1_000_000).await;
-    #[cfg(feature = "regchest")]
-    let docker = match regchest_utils::launch(MAC_SOCKET, Some("funded_orchard_mobileclient")).await
-    {
-        Ok(d) => d,
-        Err(e) => panic!("Failed to launch regchest docker container: {:?}", e),
-    };
-
-    #[cfg(not(feature = "ci"))]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test("ZingoTests/ExecuteParseAddressForTex");
-    #[cfg(feature = "ci")]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test_ci("ZingoTests/ExecuteParseAddressForTex");
-
-    #[cfg(feature = "regchest")]
-    match regchest_utils::close(&docker).await {
-        Ok(_) => (),
-        Err(e) => panic!("Failed to close regchest docker container: {:?}", e),
-    }
-
-    println!("Exit Code: {}", exit_code);
-    println!("Output: {}", output);
-    println!("Error: {}", error);
-
-    assert_eq!(exit_code, 0);
+#[test]
+#[ignore = "requires full Xcode and an installed iOS simulator"]
+fn ios_xctest_suite() {
+    require_success(run_xctest(&["-e", "ZingoTests"]));
 }
 
-async fn execute_parse_address_invalid() {
-    // Address parsing only needs a reachable server with nonzero height,
-    // so the cheap scenario suffices; the multi-pool funded scenario
-    // costs ~150s more of regtest setup per test.
-    #[cfg(not(feature = "regchest"))]
-    let _local_net = scenarios::funded_orchard_mobileclient(1_000_000).await;
-    #[cfg(feature = "regchest")]
-    let docker = match regchest_utils::launch(MAC_SOCKET, Some("funded_orchard_mobileclient")).await
-    {
-        Ok(d) => d,
-        Err(e) => panic!("Failed to launch regchest docker container: {:?}", e),
-    };
-
-    #[cfg(not(feature = "ci"))]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test("ZingoTests/ExecuteParseAddressInvalid");
-    #[cfg(feature = "ci")]
-    let (exit_code, output, error) =
-        zingomobile_utils::ios_integration_test_ci("ZingoTests/ExecuteParseAddressInvalid");
-
-    #[cfg(feature = "regchest")]
-    match regchest_utils::close(&docker).await {
-        Ok(_) => (),
-        Err(e) => panic!("Failed to close regchest docker container: {:?}", e),
-    }
-
-    println!("Exit Code: {}", exit_code);
-    println!("Output: {}", output);
-    println!("Error: {}", error);
-
-    assert_eq!(exit_code, 0);
-}
-
-mod ios_integration {
-    mod universal {
-        #[tokio::test]
-        async fn execute_version_from_seed() {
-            crate::execute_version_from_seed().await;
-        }
-
-        #[tokio::test]
-        async fn execute_addresses_from_ufvk() {
-            crate::execute_addresses_from_ufvk().await;
-        }
-
-        #[tokio::test]
-        async fn execute_addresses_from_seed() {
-            crate::execute_addresses_from_seed().await;
-        }
-
-        #[tokio::test]
-        async fn execute_sync_from_seed() {
-            crate::execute_sync_from_seed().await;
-        }
-
-        #[tokio::test]
-        async fn execute_send_from_orchard() {
-            crate::execute_send_from_orchard().await;
-        }
-
-        #[tokio::test]
-        async fn execute_currentprice_and_value_transfers_from_seed() {
-            crate::execute_currentprice_and_value_transfers_from_seed().await;
-        }
-
-        #[tokio::test]
-        async fn execute_sapling_balance_from_seed() {
-            crate::execute_sapling_balance_from_seed().await;
-        }
-
-        #[tokio::test]
-        async fn execute_parse_address_for_tex() {
-            crate::execute_parse_address_for_tex().await;
-        }
-
-        #[tokio::test]
-        async fn execute_parse_address_invalid() {
-            crate::execute_parse_address_invalid().await;
-        }
-    }
+#[test]
+#[ignore = "requires full Xcode plus Wcash CompactTxStreamer on 127.0.0.1:48234"]
+fn ios_local_regtest_suite() {
+    require_success(run_xctest(&["-l"]));
 }

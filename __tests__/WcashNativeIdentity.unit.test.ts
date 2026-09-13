@@ -257,22 +257,37 @@ test('Tests that the Wcash identity is isolated when the native apps build.', ()
   expect(servers).not.toContain('zcash-infra.com');
   expect(servers).not.toContain('lightwalletd.com');
   expect(wcashQa).toContain('runs-on: ubuntu-24.04');
-  expect(wcashQa).toContain('runs-on: macos-15');
-  expect(wcashQa.match(/--package wcash-mobile-ffi/g)).toHaveLength(2);
-  expect(wcashQa).toContain('wcash-mobile-ffi/src/zingo.udl');
+  expect(wcashQa).toContain('runs-on: macos-26');
+  expect(wcashQa).toContain(
+    'cargo clippy --locked -p wcash-mobile-adapter -p wcash-mobile-ffi --all-targets -- -D warnings',
+  );
+  expect(wcashQa).toContain(
+    'cargo test --locked -p wcash-mobile-adapter -p wcash-mobile-ffi -p rustios',
+  );
+  expect(wcashQa).toContain('cargo tree --locked -p wcash-mobile-ffi');
   expect(wcashQa).toContain('permissions:\n  contents: read');
   expect(wcashQa).not.toContain('softprops/action-gh-release');
   expect(wcashQa).not.toContain('pages deploy');
-  expect(androidRelease).toContain('Wcash native candidate QA');
+  expect(androidRelease).toContain('Wcash mobile unsigned candidate');
   expect(androidRelease).toContain('contents: read');
-  expect(androidRelease.match(/--package wcash-mobile-ffi/g)).toHaveLength(2);
+  expect(
+    androidRelease.match(
+      /cargo tree --locked --manifest-path rust\/Cargo\.toml -p wcash-mobile-ffi/g,
+    ),
+  ).toHaveLength(2);
   expect(androidRelease).toContain('aarch64-linux-android');
   expect(androidRelease).toContain('aarch64-apple-ios-sim');
   expect(androidRelease).toContain('setWalletDirectory');
   expect(androidRelease).toContain('uniffi_zingo_fn_func_set_wallet_directory');
-  expect(androidRelease).toContain("! grep -Eiq 'nym|mixnet'");
+  expect(androidRelease).toContain("if grep -Eiq 'nym|mixnet'");
+  expect(androidRelease).toContain('-sdk iphoneos');
+  expect(androidRelease).toContain("-destination 'generic/platform=iOS'");
+  expect(androidRelease).toContain('CODE_SIGNING_ALLOWED=NO');
+  expect(androidRelease).toContain('ios-arm64-device-compile-unsigned');
   expect(androidRelease).toContain('actions/upload-artifact');
-  expect(androidRelease).not.toMatch(/gradlew|signing|publish|pages deploy/i);
+  expect(androidRelease).not.toMatch(
+    /softprops\/action-gh-release|security import|store-password|key-password|pages deploy/i,
+  );
   for (const disabledWorkflow of [
     androidReusableBuild,
     androidApkWorkflow,
