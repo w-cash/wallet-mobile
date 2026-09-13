@@ -91,6 +91,7 @@ GEM
 
 PLATFORMS
   arm64-darwin-21
+  arm64-darwin-23
   arm64-darwin-25
 
 DEPENDENCIES
@@ -104,7 +105,7 @@ DEPENDENCIES
   xcodeproj (< 1.26.0)
 
 RUBY VERSION
-   ruby 3.0.0p0
+   ruby 3.3.12p0
 
 BUNDLED WITH
    2.3.18

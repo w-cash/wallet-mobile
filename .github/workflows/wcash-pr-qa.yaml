@@ -13,36 +13,40 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  NODE_VERSION: 22.18.0
+  RUST_VERSION: 1.91.0
+  RUSTUP_TOOLCHAIN: 1.91.0
+  ANDROID_NDK_VERSION: 28.2.13676358
+
 jobs:
   source-and-host-boundary:
     name: Source parity and host boundary
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout Wcash mobile
-        uses: actions/checkout@v7
-
-      - name: Reject unpublished or stale wallet runtime dependencies
-        run: |
-          set -eu
-          if grep -nE 'path[[:space:]]*=[[:space:]]*"/' rust/Cargo.toml; then
-            echo 'absolute local Rust dependencies cannot enter review' >&2
-            exit 1
-          fi
-          test "$(grep -c '^name = "wcash-wallet"$' rust/Cargo.lock)" -eq 1
-          ! grep -q '5b4e29980eb45e84ddab9024f530c923986d7e1e' rust/Cargo.lock
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: 22.18.0
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Validate immutable Wcash dependencies
+        run: |
+          node scripts/ci/verify-workflow-actions.mjs
+          node scripts/ci/verify-wcash-dependencies.mjs --remote
 
       - name: Install JavaScript dependencies
         run: |
           corepack enable
           yarn install --frozen-lockfile
 
-      - name: Verify exact upstream UI and Wcash identity
+      - name: Verify the upstream UI and Wcash identity
         run: |
           yarn test --runInBand
           yarn typecheck
@@ -56,42 +60,69 @@ jobs:
           echo "LIBCLANG_PATH=/usr/lib/llvm-18/lib" >> "$GITHUB_ENV"
 
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@8d8cc9a8e0d47b64af669de71110e76860d6afbd
+        with:
+          components: clippy, rustfmt
 
       - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
         with:
           workspaces: rust
 
       - name: Install bindgen
-        run: cargo install --locked bindgen-cli
+        run: cargo install --locked --version 0.73.2 bindgen-cli
 
-      - name: Test the Wcash-only host boundary
+      - name: Test the Wcash host boundary
         working-directory: rust
         run: |
+          test "$(rustc --version | cut -d' ' -f2)" = "$RUST_VERSION"
           cargo tree --locked -p wcash-mobile-ffi > "$RUNNER_TEMP/wcash-tree.txt"
-          ! grep -Eiq 'nym|mixnet' "$RUNNER_TEMP/wcash-tree.txt"
-          cargo test --locked -p wcash-mobile-adapter -p wcash-mobile-ffi
+          if grep -Eiq 'nym|mixnet' "$RUNNER_TEMP/wcash-tree.txt"; then
+            echo 'the Wcash dependency graph contains a legacy Nym component' >&2
+            exit 1
+          fi
+          cargo fmt --all --check
+          cargo clippy --locked -p wcash-mobile-adapter -p wcash-mobile-ffi --all-targets -- -D warnings
+          cargo test --locked -p wcash-mobile-adapter -p wcash-mobile-ffi -p rustios
 
-  android-boundary:
-    name: Android Wcash boundary
+  android-app:
+    name: Android ARM64 prodDebug app
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 150
     steps:
       - name: Checkout Wcash mobile
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Validate immutable Wcash dependencies
+        run: node scripts/ci/verify-wcash-dependencies.mjs --remote
+
+      - name: Install JavaScript dependencies
+        run: |
+          corepack enable
+          yarn install --frozen-lockfile
 
       - name: Set up Java
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: temurin
           java-version: 17
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
 
       - name: Install Android NDK
-        run: sdkmanager 'ndk;28.2.13676358'
+        run: sdkmanager "ndk;$ANDROID_NDK_VERSION"
 
       - name: Install native build prerequisites
         run: |
@@ -100,100 +131,284 @@ jobs:
           echo "LIBCLANG_PATH=/usr/lib/llvm-18/lib" >> "$GITHUB_ENV"
 
       - name: Set up Rust for Android
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@8d8cc9a8e0d47b64af669de71110e76860d6afbd
         with:
           targets: aarch64-linux-android
 
       - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
         with:
           workspaces: rust
-          key: wcash-android-arm64
+          key: wcash-android-arm64-1.91.0
 
       - name: Install Cargo Android tools
         run: |
-          cargo install --locked bindgen-cli
+          cargo install --locked --version 0.73.2 bindgen-cli
           cargo install --locked --version 4.0.1 cargo-ndk
 
-      - name: Generate the Wcash Kotlin contract
-        working-directory: rust
+      - name: Build the Wcash Android native library
         run: |
-          cargo run --locked --release --package zingo-uniffi-bindgen \
-            --bin zingo-wallet-uniffi-bindgen -- \
-            generate wcash-mobile-ffi/src/zingo.udl --language kotlin \
-            --no-format --out-dir "$RUNNER_TEMP/wcash-kotlin"
+          test "$(rustc --version | cut -d' ' -f2)" = "$RUST_VERSION"
+          cargo tree --locked --manifest-path rust/Cargo.toml -p wcash-mobile-ffi > "$RUNNER_TEMP/wcash-tree.txt"
+          if grep -Eiq 'nym|mixnet' "$RUNNER_TEMP/wcash-tree.txt"; then
+            echo 'the Wcash Android dependency graph contains a legacy Nym component' >&2
+            exit 1
+          fi
+          node rust/android/build_android_local.mjs arm64
+          grep -Rq 'setWalletDirectory' android/app/build/generated/source/uniffi/debug/java
+          llvm_nm="$ANDROID_HOME/ndk/$ANDROID_NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm"
+          "$llvm_nm" --dynamic --defined-only rust/target/aarch64-linux-android/release/libzingo.so | grep -q 'ffi_zingo_uniffi_contract_version'
+          "$llvm_nm" --dynamic --defined-only rust/target/aarch64-linux-android/release/libzingo.so | grep -q 'uniffi_zingo_fn_func_set_wallet_directory'
 
-      - name: Compile the Wcash FFI for Android ARM64
-        working-directory: rust
-        env:
-          CARGO_NDK_ANDROID_PLATFORM: 26
-          CARGO_NDK_PLATFORM: 26
-          CFLAGS_aarch64_linux_android: -mno-outline-atomics
-          CXXFLAGS_aarch64_linux_android: -mno-outline-atomics
+      - name: Test, lint, and assemble the complete APK
+        working-directory: android
         run: |
-          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
-          export ANDROID_NDK_ROOT="$ANDROID_NDK_HOME"
-          cargo tree --locked -p wcash-mobile-ffi > "$RUNNER_TEMP/wcash-tree.txt"
-          ! grep -Eiq 'nym|mixnet' "$RUNNER_TEMP/wcash-tree.txt"
-          cargo ndk --target aarch64-linux-android build --locked --release \
-            --package wcash-mobile-ffi
-          test -f target/aarch64-linux-android/release/libzingo.so
-          grep -R -q 'setWalletDirectory' "$RUNNER_TEMP/wcash-kotlin"
+          ./gradlew \
+            :app:testProdDebugUnitTest \
+            :app:lintProdDebug \
+            :app:assembleProdDebug \
+            -PwcashRegtestQaArm64Only=true
 
-  ios-boundary:
-    name: iOS Wcash boundary
-    runs-on: macos-15
-    timeout-minutes: 90
+      - name: Verify the Android package
+        id: android-package
+        run: |
+          set -euo pipefail
+          apk_dir="android/app/build/outputs/apk/prod/debug"
+          mapfile -t apks < <(find "$apk_dir" -type f -name '*.apk' -print)
+          test "${#apks[@]}" -eq 1
+          apk="${apks[0]}"
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          "$build_tools/apksigner" verify --verbose "$apk"
+          badging="$("$build_tools/aapt" dump badging "$apk")"
+          grep -Fq "package: name='com.wcashwallet.wallet'" <<< "$badging"
+          grep -Fq "application-label:'Wcash Wallet'" <<< "$badging"
+          entries="$RUNNER_TEMP/wcash-apk-entries.txt"
+          unzip -Z1 "$apk" > "$entries"
+          grep -Fxq 'assets/index.android.bundle' "$entries"
+          test "$(grep -Ec '^lib/[^/]+/libuniffi_zingo\.so$' "$entries")" -eq 1
+          grep -Fxq 'lib/arm64-v8a/libuniffi_zingo.so' "$entries"
+          if grep -E '^lib/(armeabi-v7a|x86|x86_64)/' "$entries"; then
+            echo 'the ARM64 candidate contains another Android ABI' >&2
+            exit 1
+          fi
+          if grep -Eiq '^lib/.*/.*zingo_nym_proxy_ffi' "$entries"; then
+            echo 'the Android package contains the legacy Nym native library' >&2
+            exit 1
+          fi
+          stage="$RUNNER_TEMP/wcash-pr-android"
+          mkdir -p "$stage"
+          cp "$apk" "$stage/Wcash-Wallet-pr-${GITHUB_SHA:0:12}-android-arm64-prodDebug.apk"
+          echo "path=$stage" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the Android review APK
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wcash-pr-android-${{ github.sha }}
+          path: ${{ steps.android-package.outputs.path }}
+          if-no-files-found: error
+          retention-days: 3
+
+  ios-app:
+    name: iOS ARM64 simulator and device apps
+    runs-on: macos-26
+    timeout-minutes: 240
+    env:
+      WCASH_IOS_DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=26.5
+      RCT_NO_LAUNCH_PACKAGER: '1'
     steps:
       - name: Checkout Wcash mobile
-        uses: actions/checkout@v7
-
-      - name: Select Xcode 16.4
-        uses: maxim-lobanov/setup-xcode@v1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          xcode-version: '16.4'
+          persist-credentials: false
+
+      - name: Select Xcode 26.6
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90
+        with:
+          xcode-version: '26.6'
+
+      - name: Check the Xcode version
+        run: xcodebuild -version | grep -Fq 'Xcode 26.6'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Validate immutable Wcash dependencies
+        run: node scripts/ci/verify-wcash-dependencies.mjs --remote
+
+      - name: Install JavaScript dependencies
+        run: |
+          corepack enable
+          yarn install --frozen-lockfile
+
+      - name: Verify the iOS Wcash boundary
+        run: python3 scripts/ci/verify-ios-wcash-boundary.py
+
+      - name: Set up Ruby from Gemfile.lock
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b
+        with:
+          ruby-version: '3.3.12'
+          bundler: '2.3.18'
+          bundler-cache: true
+
+      - name: Verify the Ruby bundle
+        run: |
+          test "$(ruby -e 'print RUBY_VERSION')" = '3.3.12'
+          test "$(bundle --version)" = 'Bundler version 2.3.18'
+          bundle check
 
       - name: Install native build prerequisites
-        run: brew install protobuf
+        run: brew list protobuf >/dev/null 2>&1 || brew install protobuf
 
-      - name: Set up Rust for the iOS simulator
-        uses: dtolnay/rust-toolchain@stable
+      - name: Set up Rust for iOS
+        uses: dtolnay/rust-toolchain@8d8cc9a8e0d47b64af669de71110e76860d6afbd
         with:
-          targets: aarch64-apple-ios-sim
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
 
       - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
         with:
           workspaces: rust
-          key: wcash-ios-arm64-simulator
+          key: wcash-ios-1.91.0
 
       - name: Install bindgen
-        run: cargo install --locked bindgen-cli
+        run: cargo install --locked --version 0.73.2 bindgen-cli
 
-      - name: Generate the Wcash Swift contract
-        working-directory: rust
+      - name: Configure the Apple SDK targets
         run: |
-          cargo run --locked --release --package zingo-uniffi-bindgen \
-            --bin zingo-wallet-uniffi-bindgen -- \
-            generate wcash-mobile-ffi/src/zingo.udl --language swift \
-            --no-format --out-dir "$RUNNER_TEMP/wcash-swift"
+          device_sdk="$(xcrun --sdk iphoneos --show-sdk-path)"
+          simulator_sdk="$(xcrun --sdk iphonesimulator --show-sdk-path)"
+          echo "BINDGEN_EXTRA_CLANG_ARGS_aarch64_apple_ios=--target=arm64-apple-ios -isysroot $device_sdk" >> "$GITHUB_ENV"
+          echo "BINDGEN_EXTRA_CLANG_ARGS_aarch64_apple_ios_sim=--target=arm64-apple-ios-simulator -isysroot $simulator_sdk" >> "$GITHUB_ENV"
+          echo "BINDGEN_EXTRA_CLANG_ARGS_x86_64_apple_ios=--target=x86_64-apple-ios-simulator -isysroot $simulator_sdk" >> "$GITHUB_ENV"
+          echo "CFLAGS_aarch64_apple_ios=--target=arm64-apple-ios -isysroot $device_sdk" >> "$GITHUB_ENV"
+          echo "CFLAGS_aarch64_apple_ios_sim=--target=arm64-apple-ios-simulator -isysroot $simulator_sdk" >> "$GITHUB_ENV"
+          echo "CFLAGS_x86_64_apple_ios=--target=x86_64-apple-ios-simulator -isysroot $simulator_sdk" >> "$GITHUB_ENV"
+          echo "CXXFLAGS_aarch64_apple_ios=--target=arm64-apple-ios -isysroot $device_sdk" >> "$GITHUB_ENV"
+          echo "CXXFLAGS_aarch64_apple_ios_sim=--target=arm64-apple-ios-simulator -isysroot $simulator_sdk" >> "$GITHUB_ENV"
+          echo "CXXFLAGS_x86_64_apple_ios=--target=x86_64-apple-ios-simulator -isysroot $simulator_sdk" >> "$GITHUB_ENV"
 
-      - name: Compile the Wcash FFI for the iOS ARM64 simulator
-        working-directory: rust
+      - name: Build the Wcash iOS XCFramework
         env:
           IPHONEOS_DEPLOYMENT_TARGET: '16.0'
         run: |
-          simulator_sdk="$(xcrun --sdk iphonesimulator --show-sdk-path)"
-          export BINDGEN_EXTRA_CLANG_ARGS_aarch64_apple_ios_sim="--target=arm64-apple-ios-simulator -isysroot $simulator_sdk"
-          export CFLAGS_aarch64_apple_ios_sim="--target=arm64-apple-ios-simulator -isysroot $simulator_sdk"
-          export CXXFLAGS_aarch64_apple_ios_sim="$CFLAGS_aarch64_apple_ios_sim"
-          cargo tree --locked -p wcash-mobile-ffi > "$RUNNER_TEMP/wcash-tree.txt"
-          ! grep -Eiq 'nym|mixnet' "$RUNNER_TEMP/wcash-tree.txt"
-          cargo build --locked --release --target aarch64-apple-ios-sim \
-            --package wcash-mobile-ffi
-          test -f target/aarch64-apple-ios-sim/release/libzingo.a
-          grep -q 'setWalletDirectory' "$RUNNER_TEMP/wcash-swift/zingo.swift"
-          cp "$RUNNER_TEMP/wcash-swift/zingoFFI.modulemap" \
-            "$RUNNER_TEMP/wcash-swift/module.modulemap"
-          xcrun swiftc -typecheck "$RUNNER_TEMP/wcash-swift/zingo.swift" \
-            -I "$RUNNER_TEMP/wcash-swift"
+          test "$(rustc --version | cut -d' ' -f2)" = "$RUST_VERSION"
+          cargo tree --locked --manifest-path rust/Cargo.toml -p wcash-mobile-ffi > "$RUNNER_TEMP/wcash-tree.txt"
+          if grep -Eiq 'nym|mixnet' "$RUNNER_TEMP/wcash-tree.txt"; then
+            echo 'the Wcash iOS dependency graph contains a legacy Nym component' >&2
+            exit 1
+          fi
+          yarn rust:ios
+          test "$(rustc --version | cut -d' ' -f2)" = "$RUST_VERSION"
+          grep -q 'setWalletDirectory' ios/zingo.swift
+          nm -g rust/target/aarch64-apple-ios-sim/release/libzingo.a | grep -q 'ffi_zingo_uniffi_contract_version'
+          nm -g rust/target/aarch64-apple-ios-sim/release/libzingo.a | grep -q 'uniffi_zingo_fn_func_set_wallet_directory'
+
+      - name: Install CocoaPods
+        run: |
+          test -f ios/Podfile.lock
+          bundle exec pod install --project-directory=ios --deployment
+
+      - name: Build the iOS XCTest bundle
+        run: |
+          xcodebuild build-for-testing \
+            -workspace ios/Zingo.xcworkspace \
+            -scheme Zingo \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "$WCASH_IOS_DESTINATION" \
+            -derivedDataPath ios/build/DerivedData \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=YES \
+            DEVELOPMENT_TEAM='' \
+            COMPILER_INDEX_STORE_ENABLE=NO
+
+      - name: Run the static iOS XCTest suite
+        run: scripts/ci/ios_integration_tests_ci.sh
+
+      - name: Build the complete unsigned simulator app
+        run: |
+          xcodebuild \
+            -workspace ios/Zingo.xcworkspace \
+            -scheme Zingo \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/wcash-ios-simulator-derived" \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=YES \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            DEVELOPMENT_TEAM='' \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            build
+
+      - name: Build the complete unsigned device app
+        run: |
+          xcodebuild \
+            -workspace ios/Zingo.xcworkspace \
+            -scheme Zingo \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/wcash-ios-device-derived" \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            DEVELOPMENT_TEAM='' \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            build
+
+      - name: Verify and package the iOS apps
+        id: ios-package
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/wcash-pr-ios"
+          mkdir -p "$stage"
+          for target in simulator device; do
+            if [[ "$target" == simulator ]]; then
+              app="$RUNNER_TEMP/wcash-ios-simulator-derived/Build/Products/Release-iphonesimulator/Zingo.app"
+            else
+              app="$RUNNER_TEMP/wcash-ios-device-derived/Build/Products/Release-iphoneos/Zingo.app"
+            fi
+            test -d "$app"
+            test -f "$app/main.jsbundle"
+            test "$(plutil -extract CFBundleIdentifier raw "$app/Info.plist")" = 'com.wcashwallet.wallet'
+            test "$(plutil -extract CFBundleDisplayName raw "$app/Info.plist")" = 'Wcash Wallet'
+            executable="$(plutil -extract CFBundleExecutable raw "$app/Info.plist")"
+            test "$(lipo -archs "$app/$executable")" = 'arm64'
+            test ! -d "$app/_CodeSignature"
+            test ! -f "$app/embedded.mobileprovision"
+            platform="$(xcrun vtool -show-build "$app/$executable" | awk '$1 == "platform" { print $2; exit }')"
+            if [[ "$target" == simulator ]]; then
+              test "$platform" = 'IOSSIMULATOR'
+            else
+              test "$platform" = 'IOS'
+            fi
+            if find "$app" -iname '*zingo_nym_proxy_ffi*' | grep -q .; then
+              echo 'the iOS package contains the legacy Nym native library' >&2
+              exit 1
+            fi
+            if [[ "$target" == simulator ]]; then
+              suffix='ios-arm64-simulator-unsigned'
+            else
+              suffix='ios-arm64-device-compile-unsigned'
+            fi
+            archive="$stage/Wcash-Wallet-pr-${GITHUB_SHA:0:12}-${suffix}.zip"
+            ditto -c -k --keepParent "$app" "$archive"
+            unzip -tq "$archive"
+          done
+          echo "path=$stage" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the iOS review apps
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wcash-pr-ios-${{ github.sha }}
+          path: ${{ steps.ios-package.outputs.path }}
+          if-no-files-found: error
+          retention-days: 3

@@ -1,0 +1,56 @@
+name: Wcash mobile production signing gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing immutable Wcash release tag
+        required: true
+        type: string
+      confirmation:
+        description: Enter SIGN WCASH PRODUCTION
+        required: true
+        type: string
+
+concurrency:
+  group: wcash-mobile-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  signing-gate:
+    name: Protected production gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: wcash-mobile-production
+    steps:
+      - name: Checkout the release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.release_tag }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.18.0
+
+      - name: Validate the protected release request
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          test "$CONFIRMATION" = 'SIGN WCASH PRODUCTION'
+          [[ "$RELEASE_TAG" =~ ^wcash-[0-9]+\.[0-9]+\.[0-9]+-[0-9]+$ ]]
+          test "$(git describe --tags --exact-match HEAD)" = "$RELEASE_TAG"
+          node scripts/ci/verify-workflow-actions.mjs
+          node scripts/ci/verify-wcash-dependencies.mjs --remote
+
+      - name: Stop before production signing
+        run: |
+          echo 'production signing and store delivery require a reviewed implementation and configured protected secrets' >&2
+          exit 1
