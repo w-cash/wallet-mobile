@@ -90,8 +90,7 @@ fn unsupported(feature: &str) -> ZingolibError {
 fn map_adapter(error: AdapterError) -> ZingolibError {
     let message = error.to_string();
     match error {
-        AdapterError::UnsupportedMainnet
-        | AdapterError::RegtestDisabled
+        AdapterError::RegtestDisabled
         | AdapterError::InvalidInput(_)
         | AdapterError::InvalidSeed
         | AdapterError::InvalidWalletBytes(_)
@@ -768,14 +767,62 @@ mod tests {
     }
 
     #[test]
-    fn mainnet_and_offline_fail_closed_before_any_wallet_is_created() {
-        let mainnet = validate_connection_inputs("https://example.invalid", "main", "Medium", 3)
-            .expect_err("Wcash Mainnet is not frozen");
-        assert!(mainnet.to_string().contains("Mainnet"));
+    fn mainnet_is_selected_and_offline_fails_before_wallet_creation() {
+        assert_eq!(
+            validate_connection_inputs("http://mainnet.zecwec.com:48234", "main", "Medium", 3)
+                .unwrap(),
+            wcash_mobile_adapter::MobileNetwork::Mainnet
+        );
         assert!(matches!(
             validate_connection_inputs("", "regtest", "Medium", 1),
             Err(ZingolibError::Offline)
         ));
+    }
+
+    #[test]
+    #[ignore = "requires the public Wcash Mainnet CompactTxStreamer endpoint"]
+    fn public_mainnet_native_boundary_scans_from_genesis() {
+        let directory = tempfile::tempdir().unwrap();
+        set_wallet_directory(directory.path().to_string_lossy().into_owned()).unwrap();
+        let endpoint = "http://mainnet.zecwec.com:48234";
+        let recovery: serde_json::Value = serde_json::from_str(
+            &init_new(
+                endpoint.to_owned(),
+                0,
+                "main".to_owned(),
+                "Medium".to_owned(),
+                1,
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(recovery["chain_name"], "main");
+
+        let server: serde_json::Value = serde_json::from_str(&info_server().unwrap()).unwrap();
+        assert_eq!(server["chain_name"], "main");
+        assert_eq!(run_sync().unwrap(), "Launching sync task...");
+        let result = wait_for_sync(std::time::Duration::from_secs(120));
+        let height = result["sync_complete"]["sync_end_height"]
+            .as_u64()
+            .expect("Mainnet scan height");
+        assert!(
+            height > 100,
+            "expected more than 100 Mainnet blocks, found {height}"
+        );
+        eprintln!("Wcash Mainnet mobile FFI scanned through block {height}");
+
+        let addresses: serde_json::Value =
+            serde_json::from_str(&get_unified_addresses().unwrap()).unwrap();
+        let address = addresses[0]["encoded_address"].as_str().unwrap();
+        assert!(address.starts_with("wu1"));
+        assert!(parse_address(address.to_owned()).is_ok());
+        assert!(serde_json::from_str::<serde_json::Value>(&get_balance().unwrap()).is_ok());
+        assert!(serde_json::from_str::<serde_json::Value>(&get_value_transfers().unwrap()).is_ok());
+        let bytes = save_wallet_bytes().unwrap().unwrap();
+        validate_wallet_bytes(bytes.clone()).unwrap();
+        let persisted: serde_json::Value =
+            serde_json::from_str(&read_wallet_recovery_info(bytes).unwrap()).unwrap();
+        assert_eq!(persisted["chain_name"], "main");
     }
 
     #[test]

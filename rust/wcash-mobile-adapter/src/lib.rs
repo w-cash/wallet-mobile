@@ -31,7 +31,8 @@ pub use zingolib::wcash::WalletSyncCancellation;
 use zingolib::wcash::WcashRegtestRuntime;
 use zingolib::wcash::{
     ConfirmedTransactionDirection, ConfirmedTransactionKind, InitializedWallet,
-    WalletBalanceSummary, WalletInfo, WcashTestnetRuntime,
+    WalletBalanceSummary, WalletInfo, WcashMainnetRuntime, WcashTestnetRuntime,
+    attested_public_client,
 };
 
 const WALLET_FILE_VERSION: u64 = 700;
@@ -52,6 +53,8 @@ pub const WCASH_WALLET_CORE_REV: &str = env!("WCASH_WALLET_CORE_REV");
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MobileNetwork {
+    /// Public Wcash Mainnet.
+    Mainnet,
     /// Public Wcash Testnet.
     Testnet,
     /// Local Wcash Regtest used by QA builds.
@@ -64,7 +67,7 @@ impl MobileNetwork {
         match chain_hint {
             "test" => Ok(Self::Testnet),
             "regtest" => Ok(Self::Regtest),
-            "main" => Err(AdapterError::UnsupportedMainnet),
+            "main" => Ok(Self::Mainnet),
             _ => Err(AdapterError::InvalidInput("unknown chain hint".to_owned())),
         }
     }
@@ -72,18 +75,23 @@ impl MobileNetwork {
     /// Returns the short chain token expected by the React Native app.
     pub const fn chain_name(self) -> &'static str {
         match self {
+            Self::Mainnet => "main",
             Self::Testnet => "test",
             Self::Regtest => "regtest",
         }
     }
 
-    /// Returns the test-funds ticker used by both available runtimes.
+    /// Returns the ticker of the selected Wcash network.
     pub const fn ticker(self) -> &'static str {
-        "TWC"
+        match self {
+            Self::Mainnet => "WEC",
+            Self::Testnet | Self::Regtest => "TWC",
+        }
     }
 
     fn wallet_network(self) -> WalletNetwork {
         match self {
+            Self::Mainnet => WalletNetwork::Mainnet,
             Self::Testnet => WalletNetwork::Testnet,
             Self::Regtest => WalletNetwork::Regtest,
         }
@@ -91,6 +99,7 @@ impl MobileNetwork {
 
     fn envelope_byte(self) -> u8 {
         match self {
+            Self::Mainnet => 3,
             Self::Testnet => 1,
             Self::Regtest => 2,
         }
@@ -98,6 +107,7 @@ impl MobileNetwork {
 
     fn from_envelope_byte(value: u8) -> Result<Self, AdapterError> {
         match value {
+            3 => Ok(Self::Mainnet),
             1 => Ok(Self::Testnet),
             2 => Ok(Self::Regtest),
             _ => Err(AdapterError::InvalidWalletBytes(
@@ -110,9 +120,6 @@ impl MobileNetwork {
 /// Stable errors for the future UniFFI boundary.
 #[derive(Debug, Error)]
 pub enum AdapterError {
-    /// Wcash Mainnet is intentionally unavailable until its consensus identity is frozen.
-    #[error("Wcash Mainnet is not available in this build")]
-    UnsupportedMainnet,
     /// Regtest was requested from a build that excludes the local QA backend.
     #[error("Wcash Regtest is not enabled in this build")]
     RegtestDisabled,
@@ -150,6 +157,7 @@ pub enum AdapterError {
 
 #[derive(Debug)]
 enum Runtime {
+    Mainnet(WcashMainnetRuntime),
     Testnet(WcashTestnetRuntime),
     #[cfg(feature = "regtest")]
     Regtest(WcashRegtestRuntime),
@@ -163,6 +171,10 @@ impl Runtime {
         seed: &SecretVec<u8>,
     ) -> Result<(Self, InitializedWallet), AdapterError> {
         match network {
+            MobileNetwork::Mainnet => WcashMainnetRuntime::create(endpoint, wallet_path, seed)
+                .await
+                .map(|(runtime, wallet)| (Self::Mainnet(runtime), wallet))
+                .map_err(core_error),
             MobileNetwork::Testnet => WcashTestnetRuntime::create(endpoint, wallet_path, seed)
                 .await
                 .map(|(runtime, wallet)| (Self::Testnet(runtime), wallet))
@@ -192,6 +204,12 @@ impl Runtime {
         birthday: u32,
     ) -> Result<(Self, InitializedWallet), AdapterError> {
         match network {
+            MobileNetwork::Mainnet => {
+                WcashMainnetRuntime::restore(endpoint, wallet_path, seed, birthday)
+                    .await
+                    .map(|(runtime, wallet)| (Self::Mainnet(runtime), wallet))
+                    .map_err(core_error)
+            }
             MobileNetwork::Testnet => {
                 WcashTestnetRuntime::restore(endpoint, wallet_path, seed, birthday)
                     .await
@@ -221,6 +239,10 @@ impl Runtime {
         wallet_path: &Path,
     ) -> Result<(Self, WalletInfo), AdapterError> {
         match network {
+            MobileNetwork::Mainnet => WcashMainnetRuntime::open(endpoint, wallet_path)
+                .await
+                .map(|(runtime, info)| (Self::Mainnet(runtime), info))
+                .map_err(core_error),
             MobileNetwork::Testnet => WcashTestnetRuntime::open(endpoint, wallet_path)
                 .await
                 .map(|(runtime, info)| (Self::Testnet(runtime), info))
@@ -247,6 +269,7 @@ impl Runtime {
         cancellation: &WalletSyncCancellation,
     ) -> Result<WalletBalanceSummary, AdapterError> {
         match self {
+            Self::Mainnet(runtime) => runtime.sync(cancellation).await.map_err(core_error),
             Self::Testnet(runtime) => runtime.sync(cancellation).await.map_err(core_error),
             #[cfg(feature = "regtest")]
             Self::Regtest(runtime) => runtime.sync(cancellation).await.map_err(core_error),
@@ -255,6 +278,7 @@ impl Runtime {
 
     fn balance(&self) -> Result<WalletBalanceSummary, AdapterError> {
         match self {
+            Self::Mainnet(runtime) => runtime.balance().map_err(core_error),
             Self::Testnet(runtime) => runtime.balance().map_err(core_error),
             #[cfg(feature = "regtest")]
             Self::Regtest(runtime) => runtime.balance().map_err(core_error),
@@ -263,6 +287,9 @@ impl Runtime {
 
     fn receive(&self) -> Result<WalletInfo, AdapterError> {
         match self {
+            Self::Mainnet(runtime) => {
+                WcashMainnetRuntime::inspect(runtime.wallet_path()).map_err(core_error)
+            }
             Self::Testnet(runtime) => {
                 WcashTestnetRuntime::inspect(runtime.wallet_path()).map_err(core_error)
             }
@@ -275,6 +302,12 @@ impl Runtime {
 
     fn history(&self, limit: usize) -> Result<ConfirmedTransactionSummaryHistory, AdapterError> {
         match self {
+            Self::Mainnet(runtime) => confirmed_transaction_summary_history(
+                runtime.wallet_path(),
+                WalletNetwork::Mainnet,
+                limit,
+            )
+            .map_err(core_error),
             Self::Testnet(runtime) => confirmed_transaction_summary_history(
                 runtime.wallet_path(),
                 WalletNetwork::Testnet,
@@ -341,9 +374,13 @@ impl WcashMobileAdapter {
             ));
         }
         let mut errors = Vec::new();
-        for network in [MobileNetwork::Regtest, MobileNetwork::Testnet] {
-            match AttestedWcashClient::connect(endpoint, network.wallet_network()).await {
-                Ok(mut client) => {
+        for network in [
+            MobileNetwork::Mainnet,
+            MobileNetwork::Regtest,
+            MobileNetwork::Testnet,
+        ] {
+            match attested_public_client(endpoint, network.wallet_network()).await {
+                Ok((mut client, _relay)) => {
                     return client
                         .latest_block()
                         .await
@@ -354,7 +391,7 @@ impl WcashMobileAdapter {
             }
         }
         Err(AdapterError::Core(format!(
-            "endpoint did not attest as Wcash Testnet or Regtest ({})",
+            "endpoint did not attest as a Wcash network ({})",
             errors.join("; ")
         )))
     }
@@ -365,7 +402,7 @@ impl WcashMobileAdapter {
         network: MobileNetwork,
     ) -> Result<String, AdapterError> {
         let wallet_network = network.wallet_network();
-        let mut client = AttestedWcashClient::connect(endpoint, wallet_network)
+        let (mut client, _relay) = attested_public_client(endpoint, wallet_network)
             .await
             .map_err(core_error)?;
         let latest = client.latest_block().await.map_err(core_error)?;
@@ -712,10 +749,14 @@ impl WcashMobileAdapter {
                 "the address is empty".to_owned(),
             ));
         }
-        let network = [MobileNetwork::Testnet, MobileNetwork::Regtest]
-            .into_iter()
-            .find(|network| decode_recipient(address, network.wallet_network()).is_ok())
-            .ok_or_else(|| AdapterError::InvalidInput("invalid Wcash address".to_owned()))?;
+        let network = [
+            MobileNetwork::Mainnet,
+            MobileNetwork::Testnet,
+            MobileNetwork::Regtest,
+        ]
+        .into_iter()
+        .find(|network| decode_recipient(address, network.wallet_network()).is_ok())
+        .ok_or_else(|| AdapterError::InvalidInput("invalid Wcash address".to_owned()))?;
         Ok(serde_json::to_string_pretty(&ParsedAddress {
             status: "success",
             chain_name: network.chain_name(),
@@ -941,6 +982,7 @@ impl WcashMobileAdapter {
 
     fn minimum_confirmations(&self) -> u32 {
         match self.network {
+            MobileNetwork::Mainnet => COINBASE_SHIELDING_MATURITY,
             MobileNetwork::Testnet => COINBASE_SHIELDING_MATURITY,
             MobileNetwork::Regtest => LOCAL_REGTEST_CONFIRMATIONS,
         }
@@ -1883,7 +1925,11 @@ mod tests {
     }
 
     #[test]
-    fn chain_hints_fail_closed_without_mainnet() {
+    fn chain_hints_select_the_frozen_wcash_network() {
+        assert_eq!(
+            MobileNetwork::from_chain_hint("main").unwrap(),
+            MobileNetwork::Mainnet
+        );
         assert_eq!(
             MobileNetwork::from_chain_hint("test").unwrap(),
             MobileNetwork::Testnet
@@ -1892,11 +1938,8 @@ mod tests {
             MobileNetwork::from_chain_hint("regtest").unwrap(),
             MobileNetwork::Regtest
         );
-        assert!(matches!(
-            MobileNetwork::from_chain_hint("main"),
-            Err(AdapterError::UnsupportedMainnet)
-        ));
         assert!(MobileNetwork::from_chain_hint("zcash").is_err());
+        assert_eq!(MobileNetwork::Mainnet.ticker(), "WEC");
         assert_eq!(MobileNetwork::Testnet.ticker(), "TWC");
     }
 
@@ -2269,6 +2312,7 @@ mod tests {
     fn parse_address_accepts_each_wcash_network_and_reports_the_chain() {
         let mut addresses = Vec::new();
         for (network, mobile) in [
+            (WalletNetwork::Mainnet, MobileNetwork::Mainnet),
             (WalletNetwork::Testnet, MobileNetwork::Testnet),
             (WalletNetwork::Regtest, MobileNetwork::Regtest),
         ] {

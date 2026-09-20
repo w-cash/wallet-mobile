@@ -208,7 +208,7 @@ final class WcashIOSIdentityTests: XCTestCase {
         XCTAssertTrue(version.hasSuffix("-wcash-mobile-adapter"))
     }
 
-    func testMainnetFailsBeforeWalletCreation() {
+    func testMainnetUnavailableServerFailsWithoutDisablingTheNetwork() {
         XCTAssertThrowsError(
             try initFromSeed(
                 seed: Seeds.HOSPITAL,
@@ -219,10 +219,10 @@ final class WcashIOSIdentityTests: XCTestCase {
                 minconfirmations: 1
             )
         ) { error in
-            guard case ZingolibError.InvalidInput(let message) = error else {
-                return XCTFail("Expected InvalidInput, got \(error)")
+            guard case ZingolibError.Wallet(let message) = error else {
+                return XCTFail("Expected wallet transport failure, got \(error)")
             }
-            XCTAssertTrue(message.contains("Mainnet"))
+            XCTAssertTrue(message.contains("connect to lightwalletd"))
         }
     }
 
