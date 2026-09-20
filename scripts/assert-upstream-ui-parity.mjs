@@ -5,10 +5,14 @@ import { fileURLToPath } from 'node:url';
 
 const repo = dirname(dirname(fileURLToPath(import.meta.url)));
 const roots = ['app', 'screens', 'ui', 'assets'];
-const upstreamCount = 452;
+const upstreamCount = 451;
 const upstreamDigest =
-  'c14027c3a01b23eff5b6675bb03db3835e306f1d90333596e9e98a69e9f7220e';
+  'e259018b976e323880a3e355309bcad6fe67f62f0b97e98a60e48d6b6571a7e1';
 const reviewedExceptionDigests = new Map([
+  [
+    'app/uris/wcashMainnetUri.ts',
+    '45a3576fe506c76b4368b06457409c8bc57737ed77d05b218c79f9ff7e92c387',
+  ],
   [
     'assets/img/logobig-zingo-beta.png',
     'c878506b87ee8497b7ae3d0153fdd9c2dbda6732e05361722945f36d94be70b5',
@@ -75,7 +79,11 @@ const reviewedExceptionDigests = new Map([
   ],
   [
     'app/uris/serverUris.ts',
-    'b7c0f7b203d3790586868a8e1dc7cd8884d91eb75556461b0e61e2bfee6455cd',
+    '23032eb893cd2c0b19eec80dc0af9ac850505e3900bfca8a1c03751e282f51a6',
+  ],
+  [
+    'app/uris/parseServerURI.ts',
+    'bf1262306b48ce64eeb0c9ea8a0ad940e0c4c30af6c11cbd93382692a0a5adb1',
   ],
   [
     'app/utils/Utils.ts',

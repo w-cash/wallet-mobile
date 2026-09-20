@@ -12,7 +12,7 @@ function fail(message) {
 }
 
 if (!rootArg) fail('an artifact directory is required');
-if (network !== 'regtest') fail(`unsupported candidate network ${network}`);
+if (network !== 'mainnet') fail(`unsupported candidate network ${network}`);
 if (!/^\d+\.\d+\.\d+$/.test(version ?? ''))
   fail('the candidate version is invalid');
 if (!/^\d+$/.test(build ?? '')) fail('the candidate build number is invalid');

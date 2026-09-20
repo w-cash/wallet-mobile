@@ -251,8 +251,8 @@ test('Tests that the Wcash identity is isolated when the native apps build.', ()
   expect(loadedApp).toContain('zenniesAddress &&');
   expect(utils).toContain('static async getDonationAddress');
   expect(utils).toContain("return '';");
-  expect(servers).toContain("uri: 'http://127.0.0.1:48234'");
-  expect(servers).toContain('chainName: ChainNameEnum.regtestChainName');
+  expect(servers).toContain('uri: WCASH_MAINNET_URI');
+  expect(servers).toContain('chainName: ChainNameEnum.mainChainName');
   expect(servers).not.toContain('zec.rocks');
   expect(servers).not.toContain('zcash-infra.com');
   expect(servers).not.toContain('lightwalletd.com');

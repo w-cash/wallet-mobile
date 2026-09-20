@@ -46,7 +46,7 @@ jobs:
 
       - name: Read candidate metadata
         id: metadata
-        run: node scripts/ci/mobile-candidate-metadata.mjs regtest
+        run: node scripts/ci/mobile-candidate-metadata.mjs mainnet
 
   android-candidate:
     name: Android ARM64 prodDebug candidate

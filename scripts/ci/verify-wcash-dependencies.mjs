@@ -14,11 +14,11 @@ const obsoleteRuntime = '5b4e29980eb45e84ddab9024f530c923986d7e1e';
 const approvedPins = new Map([
   [
     'https://github.com/w-cash/wallet-core.git',
-    new Set(['5f4e0b45bad15facb5f84ac6217cb5287101bf96']),
+    new Set(['5bfd56f3ca4f332f9520908821a0b7e166b2372f']),
   ],
   [
     'https://github.com/w-cash/wolf.git',
-    new Set(['f2486f65a6508771eafc634223344499ac23c5a5']),
+    new Set(['45393319d24c3c3181f98d503c97a315661b59af']),
   ],
   [
     'https://github.com/zingolabs/zingo-regchest',

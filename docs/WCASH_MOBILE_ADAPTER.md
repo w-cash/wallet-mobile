@@ -7,17 +7,17 @@
 - Product label: `Wcash Wallet`.
 - Native identity: `com.wcashwallet.wallet`; beta: `com.wcashwallet.wallet.beta`.
 - Production ticker copy: `WEC`; Testnet and Regtest runtime ticker: `TWC`.
-- Wcash Mainnet is unavailable. The reviewed backend exposes Testnet and feature-gated Regtest only.
+- Wcash Mainnet uses the fixed `http://mainnet.zecwec.com:48234` CompactTxStreamer endpoint, genesis `5bae12c8662a577b04ce1591af1a137c128f0cb51018a5f1622d861d1bb6fc48`, and wallet birthday 1. Testnet and feature-gated Regtest remain available.
 
-The React screens, styles, component hierarchy, and navigation remain the upstream implementation. Against the reviewed `0d54fd5b` base, `scripts/assert-upstream-ui-parity.mjs` verifies 452 UI files as one byte-identical upstream digest and 22 individually reviewed exceptions for branding, Wcash protocol copy, and product assets. The visible About product notice uses Wcash Wallet; upstream ZingoLabs/Zingo copyright and MIT attribution remain intact in the repository's license and third-party notices. Internal Zingo module, target, type, and UniFFI names remain where source compatibility requires them.
+The React screens, styles, component hierarchy, and navigation remain the upstream implementation. Against the reviewed `0d54fd5b` base, `scripts/assert-upstream-ui-parity.mjs` verifies 451 byte-identical UI files and 24 reviewed exceptions for branding, Wcash protocol copy, product assets, and fixed network configuration. The visible About product notice uses Wcash Wallet; upstream ZingoLabs/Zingo copyright and MIT attribution remain intact in the repository's license and third-party notices. Internal Zingo module, target, type, and UniFFI names remain where source compatibility requires them.
 
 The upstream `rust/lib` implementation remains byte-identical and is excluded from the active Wcash Cargo workspace. No Wcash native build or workflow compiles or packages it.
 
 ## Reproducibility gate
 
-The manifest and lockfile pin wallet-core commit `5f4e0b45bad15facb5f84ac6217cb5287101bf96` and Wolf commit `f2486f65a6508771eafc634223344499ac23c5a5` through their public GitHub URLs. Cargo resolves exactly one remote-source `wcash-wallet` package and the final Wcash FFI graph contains no Nym or mixnet dependency. Wolf supplies staged transactions, retry-safe proposal cancellation, seed verification, confirmed-history summaries, and mobile sandbox-aware path validation.
+The manifest and lockfile pin wallet-core commit `5bfd56f3ca4f332f9520908821a0b7e166b2372f` and Wolf commit `45393319d24c3c3181f98d503c97a315661b59af` through their public GitHub URLs. Cargo resolves exactly one remote-source `wcash-wallet` package and the final Wcash FFI graph contains no Nym or mixnet dependency. Wolf supplies staged transactions, retry-safe proposal cancellation, seed verification, confirmed-history summaries, and mobile sandbox-aware path validation.
 
-At the time of this local verification, clean shallow fetches of those two revisions still returned `not our ref`; the objects were available only in the reviewed local repositories and existing Cargo cache. The pull-request and candidate workflows therefore fail closed before producing an artifact until both exact revisions are published. They also reject absolute Rust paths, require exactly one `wcash-wallet` lockfile entry, and reject the obsolete Wolf revision `5b4e29980eb45e84ddab9024f530c923986d7e1e`. After publication, rerun the locked build with an isolated Cargo home to prove clean reproducibility.
+The pull-request and candidate workflows verify that the exact revisions are publicly fetchable before producing an artifact. They also reject absolute Rust paths, require exactly one `wcash-wallet` lockfile entry, and reject the obsolete Wolf revision `5b4e29980eb45e84ddab9024f530c923986d7e1e`.
 
 ## Wcash-only native boundary
 
@@ -60,7 +60,8 @@ No Wcash donation address, block explorer, or support email is approved. The ups
 
 Local source and host checks completed on 2026-09-13:
 
-- UI parity: 452 byte-identical upstream files plus 22 reviewed exceptions.
+- UI parity: 451 byte-identical upstream files plus 24 reviewed exceptions.
+- Mainnet on 2026-09-19: the mobile FFI created a wallet at birthday 1 and scanned through block 259 against `http://mainnet.zecwec.com:48234`. The Android ARM64 production-debug APK passed unit, lint, package, signature, and emulator installation checks. Xcode 27 built the iOS XCFramework and simulator test bundle.
 - Jest: 89 suites, 622 tests, and 95 snapshots passed.
 - TypeScript, ESLint, Prettier, Rustfmt, and strict Clippy for the Wcash adapter/FFI boundary passed.
 - Rust host tests: 15 adapter tests and 5 FFI tests passed; two network tests are ignored by default.

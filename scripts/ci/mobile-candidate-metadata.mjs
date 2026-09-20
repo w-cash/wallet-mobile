@@ -13,7 +13,7 @@ function fail(message) {
   process.exit(1);
 }
 
-if (network !== 'regtest') fail(`unsupported candidate network ${network}`);
+if (network !== 'mainnet') fail(`unsupported candidate network ${network}`);
 if (!/^[0-9a-f]{40}$/.test(sourceSha ?? ''))
   fail('the source revision must be a full Git SHA');
 

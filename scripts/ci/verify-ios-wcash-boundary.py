@@ -46,7 +46,7 @@ for token in (
 reject(swift, "SIMCTL_CHILD_", str(swift_path))
 
 server_path = ROOT / "app/uris/serverUris.ts"
-require(server_path.read_text(), "http://127.0.0.1:48234", str(server_path))
+require(server_path.read_text(), "WCASH_MAINNET_URI", str(server_path))
 
 adapter_path = ROOT / "rust/wcash-mobile-adapter/src/lib.rs"
 adapter = adapter_path.read_text()

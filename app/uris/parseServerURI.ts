@@ -1,5 +1,6 @@
 import Url from 'url-parse';
 import { ErrorKeyed, GlobalConst } from '@app/AppState';
+import { WCASH_MAINNET_URI } from './wcashMainnetUri';
 
 // Audit Issue G — plaintext http:// is only acceptable when the user is
 // pointing at a server running on the same device (local development,
@@ -41,7 +42,8 @@ const parseServerURI = (uri: string): ParseServerUriResult => {
   // Reject http:// for any non-local host — see audit Issue G.
   if (
     parsedUri.protocol === GlobalConst.http &&
-    !isLocalHost(parsedUri.hostname)
+    !isLocalHost(parsedUri.hostname) &&
+    uri !== WCASH_MAINNET_URI
   ) {
     return { kind: 'error', errorKey: 'uris.error-http-not-allowed' };
   }

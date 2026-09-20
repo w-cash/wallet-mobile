@@ -19,6 +19,13 @@ describe('parseServerURI — Issue G plaintext rules', () => {
     });
   });
 
+  test('the pinned Wcash Mainnet route is accepted', () => {
+    expect(parseServerURI('http://mainnet.zecwec.com:48234')).toEqual({
+      kind: 'canonicalUri',
+      uri: 'http://mainnet.zecwec.com:48234',
+    });
+  });
+
   test('http localhost → accepted', () => {
     expect(parseServerURI('http://localhost:9067')).toEqual({
       kind: 'canonicalUri',
