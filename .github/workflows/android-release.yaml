@@ -2,6 +2,8 @@ name: Wcash mobile unsigned candidate
 
 on:
   workflow_dispatch:
+  push:
+    tags: ['wcash-*']
 
 concurrency:
   group: wcash-mobile-candidate-${{ github.ref }}
@@ -423,3 +425,68 @@ jobs:
           path: ${{ runner.temp }}/wcash-mobile-candidate
           if-no-files-found: error
           retention-days: 14
+
+  github-prerelease:
+    name: Publish the verified GitHub prerelease
+    if: startsWith(github.ref, 'refs/tags/wcash-')
+    needs: [metadata, candidate]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the tagged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify the immutable release tag
+        env:
+          VERSION: ${{ needs.metadata.outputs.version }}
+          BUILD: ${{ needs.metadata.outputs.build }}
+        run: |
+          set -euo pipefail
+          expected="wcash-${VERSION}-${BUILD}"
+          test "$GITHUB_REF_NAME" = "$expected"
+          test "$(git rev-list -n 1 "$GITHUB_REF_NAME")" = "$GITHUB_SHA"
+
+      - name: Download the complete candidate
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: ${{ needs.metadata.outputs.stem }}-mobile-candidate
+          path: ${{ runner.temp }}/wcash-mobile-release
+
+      - name: Verify the release payload
+        env:
+          RELEASE_PATH: ${{ runner.temp }}/wcash-mobile-release
+        run: |
+          set -euo pipefail
+          test "$(find "$RELEASE_PATH" -maxdepth 1 -type f -name '*-android-arm64-prodDebug.apk' | wc -l)" -eq 1
+          test "$(find "$RELEASE_PATH" -maxdepth 1 -type f -name '*-ios-arm64-simulator-unsigned.zip' | wc -l)" -eq 1
+          test "$(find "$RELEASE_PATH" -maxdepth 1 -type f -name '*-ios-arm64-device-compile-unsigned.zip' | wc -l)" -eq 1
+          test -f "$RELEASE_PATH/MANIFEST.json"
+          test -f "$RELEASE_PATH/SHA256SUMS"
+          (cd "$RELEASE_PATH" && sha256sum --check SHA256SUMS)
+          printf '%s\n' \
+            "repository=${GITHUB_REPOSITORY}" \
+            "tag=${GITHUB_REF_NAME}" \
+            "source=${GITHUB_SHA}" \
+            "workflow=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            > "$RELEASE_PATH/SOURCE.txt"
+
+      - name: Publish the GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_PATH: ${{ runner.temp }}/wcash-mobile-release
+        run: |
+          cat > "$RUNNER_TEMP/release-notes.md" <<EOF
+          Wcash Wallet mobile mainnet candidate built from \`${GITHUB_SHA}\`.
+
+          This is a prerelease for review. The Android ARM64 APK uses the Android debug certificate. The iOS archives are unsigned developer artifacts; they are not App Store packages and cannot be installed normally on an iPhone. Verify the matching SHA-256 value in \`SHA256SUMS\` before testing.
+          EOF
+          gh release create "$GITHUB_REF_NAME" "$RELEASE_PATH"/* \
+            --verify-tag \
+            --prerelease \
+            --title "Wcash Wallet mobile ${GITHUB_REF_NAME#wcash-} candidate" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"
