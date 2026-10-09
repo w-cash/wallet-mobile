@@ -1046,7 +1046,7 @@ exports[`Component Settings - test Settings - snapshot 1`] = `
                     }
                   }
                 >
-                  http://mainnet.zecwec.com:48234
+                  https://mainnet.zecwec.com:443
                 </Text>
               </View>
               <
@@ -2214,7 +2214,7 @@ exports[`Component Settings - test Settings - snapshot 1`] = `
           }
         }
       >
-        http://mainnet.zecwec.com:48234
+        https://mainnet.zecwec.com:443
       </Text>
     </View>
     <View
@@ -2504,7 +2504,7 @@ exports[`Component Settings - test Settings - snapshot 1`] = `
             }
           }
         >
-          http://mainnet.zecwec.com:48234
+          https://mainnet.zecwec.com:443
         </Text>
       </View>
     </View>

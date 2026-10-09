@@ -152,6 +152,10 @@ RCT_EXTERN_METHOD(parseUfvkInfo:
 RCT_EXTERN_METHOD(getVersionInfo:
     (RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject)
+RCT_EXTERN_METHOD(getWalletActivationHeight:
+    (NSString)chainHint
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject)
 RCT_EXTERN_METHOD(getMessagesInfo:
     (NSString)address 
                   resolve:(RCTPromiseResolveBlock)resolve

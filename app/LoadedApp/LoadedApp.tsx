@@ -102,6 +102,7 @@ import {
   resolveTriggerGate,
 } from '@app/services/gateController';
 import ShowAddressAlertAsync from '@app/services/showAddressAlertAsync';
+import { fetchInitialNetworkState } from '@app/services/initialNetworkState';
 import {
   createUpdateRecoveryWalletInfo,
   removeRecoveryWalletInfo,
@@ -242,7 +243,7 @@ export default function LoadedApp(props: LoadedAppProps) {
   const [performanceLevel, setPerformanceLevel] =
     useState<RPCPerformanceLevelEnum>(RPCPerformanceLevelEnum.Medium);
   const [blockExplorer, setBlockExplorer] = useState<BlockExplorerEnum>(
-    BlockExplorerEnum.Zcashexplorer,
+    BlockExplorerEnum.None,
   );
   const [nym, setNym] = useState<boolean>(false);
   const [zenniesDonationAddress, setZenniesDonationAddress] =
@@ -900,7 +901,7 @@ export class LoadedAppClass extends Component<
   }
 
   componentDidMount = async () => {
-    const netInfoState = await NetInfo.fetch();
+    const netInfoState = await fetchInitialNetworkState();
     this.setState({
       netInfo: {
         isConnected: netInfoState.isConnected,

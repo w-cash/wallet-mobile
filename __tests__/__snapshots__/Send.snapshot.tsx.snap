@@ -278,6 +278,19 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
                     style={
                       {
                         "color": "#c3c3c3",
+                        "fontSize": 25.2,
+                        "fontWeight": "700",
+                        "margin": 0,
+                        "padding": 0,
+                      }
+                    }
+                  >
+                    WEC
+                  </Text>
+                  <Text
+                    style={
+                      {
+                        "color": "#c3c3c3",
                         "fontSize": 36,
                         "fontWeight": "700",
                         "margin": 0,
@@ -1304,6 +1317,19 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
                               }
                             }
                           >
+                            <Text
+                              style={
+                                {
+                                  "color": "#FFB972",
+                                  "fontSize": 14,
+                                  "fontWeight": "700",
+                                  "margin": 0,
+                                  "padding": 0,
+                                }
+                              }
+                            >
+                              WEC
+                            </Text>
                             <Text
                               style={
                                 {
@@ -2373,6 +2399,19 @@ exports[`Component Send - test Send no currency, privacy normal & mode basic - s
                     style={
                       {
                         "color": "#c3c3c3",
+                        "fontSize": 25.2,
+                        "fontWeight": "700",
+                        "margin": 0,
+                        "padding": 0,
+                      }
+                    }
+                  >
+                    WEC
+                  </Text>
+                  <Text
+                    style={
+                      {
+                        "color": "#c3c3c3",
                         "fontSize": 36,
                         "fontWeight": "700",
                         "margin": 0,
@@ -3122,6 +3161,19 @@ exports[`Component Send - test Send no currency, privacy normal & mode basic - s
                               }
                             }
                           >
+                            <Text
+                              style={
+                                {
+                                  "color": "#FFB972",
+                                  "fontSize": 14,
+                                  "fontWeight": "700",
+                                  "margin": 0,
+                                  "padding": 0,
+                                }
+                              }
+                            >
+                              WEC
+                            </Text>
                             <Text
                               style={
                                 {

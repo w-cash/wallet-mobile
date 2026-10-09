@@ -33,9 +33,7 @@ import RegText from '@ui/primitives/RegText';
 import SheetRim from '@ui/primitives/SheetRim';
 import { chainDisplayName } from './chainDisplayName';
 import { getChainIcon } from './chainIcons';
-
-// Zcash has no entry in the bundled `chainIcons` map; use the app's own logo.
-const ZCASH_LOGO = require('../../assets/img/zcash-yellow.png');
+import { getZingoLogo } from '@app/utils/ZingoAppData';
 
 /**
  * Fixed snap point kept at module scope so the array identity is stable across
@@ -46,7 +44,7 @@ const ZCASH_LOGO = require('../../assets/img/zcash-yellow.png');
 const SNAP_POINTS: string[] = ['95%'];
 
 /**
- * The chain's logo: the app Zcash mark for ZEC, the bundled per-chain icon
+ * The chain's logo: the Wcash mark for the internal ZEC chain code, the bundled per-chain icon
  * otherwise, and a coloured letter avatar (chain siglas) when we ship no icon —
  * so the slot is never empty.
  */
@@ -55,7 +53,7 @@ export const ChainLogo: React.FunctionComponent<{
   size: number;
 }> = ({ chain, size }) => {
   const upper = (chain || '').toUpperCase();
-  const src = upper === 'ZEC' ? ZCASH_LOGO : getChainIcon(upper);
+  const src = upper === 'ZEC' ? getZingoLogo() : getChainIcon(upper);
   if (src) {
     return (
       <Image
@@ -357,7 +355,9 @@ const ChainSelect: React.FunctionComponent<ChainSelectProps> = ({
                       {chainDisplayName(chain)}
                     </RegText>
                     <FadeText style={{ fontSize: 12 }}>
-                      {(chain || '').toUpperCase()}
+                      {(chain || '').toUpperCase() === 'ZEC'
+                        ? 'WEC'
+                        : (chain || '').toUpperCase()}
                     </FadeText>
                   </View>
                   {selected && (

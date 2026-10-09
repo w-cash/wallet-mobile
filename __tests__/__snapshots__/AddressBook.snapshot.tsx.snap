@@ -808,7 +808,7 @@ exports[`Component Address Book - test Address Book - snapshot 1`] = `
               resizeMode="contain"
               source={
                 {
-                  "testUri": "../../../assets/img/zcash-yellow.png",
+                  "testUri": "../../../assets/img/logobig-zingo.png",
                 }
               }
               style={
@@ -1096,7 +1096,7 @@ exports[`Component Address Book - test Address Book - snapshot 1`] = `
                 resizeMode="contain"
                 source={
                   {
-                    "testUri": "../../../assets/img/zcash-yellow.png",
+                    "testUri": "../../../assets/img/logobig-zingo.png",
                   }
                 }
                 style={
@@ -1135,7 +1135,7 @@ exports[`Component Address Book - test Address Book - snapshot 1`] = `
                     }
                   }
                 >
-                  ZEC
+                  WEC
                 </Text>
               </View>
               <

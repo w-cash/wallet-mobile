@@ -536,6 +536,19 @@ exports[`ValueTransferLine - snapshots ValueTransferLine failed transaction 1`] 
                         "padding": 0,
                       }
                     }
+                  >
+                    WEC
+                  </Text>
+                  <Text
+                    style={
+                      {
+                        "color": "#888888",
+                        "fontSize": 14,
+                        "fontWeight": "700",
+                        "margin": 0,
+                        "padding": 0,
+                      }
+                    }
                     testID="undefined.big-part"
                   >
                      0.1234
@@ -1023,6 +1036,19 @@ exports[`ValueTransferLine - snapshots ValueTransferLine pending (0 confirmation
                         "padding": 0,
                       }
                     }
+                  >
+                    WEC
+                  </Text>
+                  <Text
+                    style={
+                      {
+                        "color": "#5a8c5a",
+                        "fontSize": 14,
+                        "fontWeight": "700",
+                        "margin": 0,
+                        "padding": 0,
+                      }
+                    }
                     testID="undefined.big-part"
                   >
                      0.1234
@@ -1459,6 +1485,19 @@ exports[`ValueTransferLine - snapshots ValueTransferLine received, no month head
                     }
                   }
                 >
+                  <Text
+                    style={
+                      {
+                        "color": "#18bd18",
+                        "fontSize": 14,
+                        "fontWeight": "700",
+                        "margin": 0,
+                        "padding": 0,
+                      }
+                    }
+                  >
+                    WEC
+                  </Text>
                   <Text
                     style={
                       {
@@ -2045,6 +2084,19 @@ exports[`ValueTransferLine - snapshots ValueTransferLine sent confirmed 1`] = `
                     }
                   }
                 >
+                  <Text
+                    style={
+                      {
+                        "color": "#c3c3c3",
+                        "fontSize": 14,
+                        "fontWeight": "700",
+                        "margin": 0,
+                        "padding": 0,
+                      }
+                    }
+                  >
+                    WEC
+                  </Text>
                   <Text
                     style={
                       {

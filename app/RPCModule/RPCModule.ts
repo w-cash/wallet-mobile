@@ -84,6 +84,7 @@ interface RPCModuleAPI {
   getSeedInfo(): Promise<string>;
   getUfvkInfo(): Promise<string>;
   getVersionInfo(): Promise<string>;
+  getWalletActivationHeight(chainHint: string): Promise<string>;
   getWalletVersionInfo(): Promise<string>;
   getWalletSaveRequiredInfo(): Promise<string>;
 

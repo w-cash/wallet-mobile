@@ -4,6 +4,7 @@ jest.mock('react-native', () => {
   RN.NativeModules.RPCModule = {
     getLatestBlockServerInfo: jest.fn(() => '{}'),
     getLatestBlockWalletInfo: jest.fn(() => '{}'),
+    getWalletActivationHeight: jest.fn(() => '1'),
     walletExists: jest.fn(() => 'false'),
     walletBackupExists: jest.fn(() => 'false'),
     doSaveBackup: jest.fn(() => 'true'),

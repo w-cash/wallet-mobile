@@ -100,7 +100,16 @@ export const getRecoveryWalletInfo = async (): Promise<WalletType> => {
 };
 
 export const hasRecoveryWalletInfo = async (): Promise<boolean> => {
-  return await Keychain.hasGenericPassword(baseOptions);
+  try {
+    const credentials = await Keychain.getGenericPassword(getOptions);
+    return Boolean(
+      credentials &&
+      credentials.username === GlobalConst.keyKeyChain &&
+      credentials.service === service,
+    );
+  } catch {
+    return false;
+  }
 };
 
 export const createUpdateRecoveryWalletInfo = async (

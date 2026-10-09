@@ -14,7 +14,7 @@ const obsoleteRuntime = '5b4e29980eb45e84ddab9024f530c923986d7e1e';
 const approvedPins = new Map([
   [
     'https://github.com/w-cash/wallet-core.git',
-    new Set(['5bfd56f3ca4f332f9520908821a0b7e166b2372f']),
+    new Set(['f86cd05d1deb72b571b173ece3777df91c1d44e6']),
   ],
   [
     'https://github.com/w-cash/wolf.git',

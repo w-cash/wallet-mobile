@@ -567,6 +567,12 @@ export async function getLatestBlockServerInfo(
   return callFfi(RPCModule.getLatestBlockServerInfo(serverUri));
 }
 
+export async function getWalletActivationHeight(
+  chainHint: string,
+): Promise<FfiResult<string>> {
+  return callFfi(RPCModule.getWalletActivationHeight(chainHint));
+}
+
 // Pre-calculates the shielding fee and shieldable amount without broadcasting.
 // Mirrors the native `shieldProcess` (propose phase). Pair with `shieldConfirm`
 // to actually execute the shield.

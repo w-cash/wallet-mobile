@@ -193,6 +193,19 @@ exports[`Component Components - test ZecAmount High Privacy - snapshot 1`] = `
           }
         }
       >
+        WEC
+      </Text>
+      <Text
+        style={
+          {
+            "color": "red",
+            "fontSize": 20,
+            "fontWeight": "700",
+            "margin": 0,
+            "padding": 0,
+          }
+        }
+      >
          -.----
       </Text>
     </View>
@@ -254,6 +267,19 @@ exports[`Component Components - test ZecAmount Normal Privacy - snapshot 1`] = `
         }
       }
     >
+      <Text
+        style={
+          {
+            "color": "red",
+            "fontSize": 20,
+            "fontWeight": "700",
+            "margin": 0,
+            "padding": 0,
+          }
+        }
+      >
+        WEC
+      </Text>
       <Text
         style={
           {

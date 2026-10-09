@@ -16,11 +16,11 @@ exclude = ["lib", "nym-proxy-ffi"]
 resolver = "2"
 
 [workspace.dependencies]
-zingolib = { git = "https://github.com/w-cash/wallet-core.git", rev = "5bfd56f3ca4f332f9520908821a0b7e166b2372f", features = [
+zingolib = { git = "https://github.com/w-cash/wallet-core.git", rev = "f86cd05d1deb72b571b173ece3777df91c1d44e6", features = [
     "perspective",
 ] }
-pepper-sync = { git = "https://github.com/w-cash/wallet-core.git", rev = "5bfd56f3ca4f332f9520908821a0b7e166b2372f" }
-zingolib_testutils = { git = "https://github.com/w-cash/wallet-core.git", rev = "5bfd56f3ca4f332f9520908821a0b7e166b2372f" }
+pepper-sync = { git = "https://github.com/w-cash/wallet-core.git", rev = "f86cd05d1deb72b571b173ece3777df91c1d44e6" }
+zingolib_testutils = { git = "https://github.com/w-cash/wallet-core.git", rev = "f86cd05d1deb72b571b173ece3777df91c1d44e6" }
 wcash-wallet = { git = "https://github.com/w-cash/wolf.git", rev = "45393319d24c3c3181f98d503c97a315661b59af" }
 regchest_utils = { git = "https://github.com/zingolabs/zingo-regchest", rev = "4ae67cc9f347077504245dc0082d192db95ac467" }
 zingomobile_utils = { path = "zingomobile_utils" }

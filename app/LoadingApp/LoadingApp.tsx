@@ -31,6 +31,7 @@ import { showWalletRecovery } from '@app/services/showWalletRecovery';
 import {
   createNewWallet,
   getVersionInfo,
+  getWalletActivationHeight,
   getWalletKind,
   hasRepairableWalletFile,
   loadExistingWallet,
@@ -102,6 +103,10 @@ import {
   retireSentinelEntries,
 } from '@app/services/gateController';
 import selectingServer from '@app/services/selectingServer';
+import {
+  canAttemptNetwork,
+  fetchInitialNetworkState,
+} from '@app/services/initialNetworkState';
 import { isEqual } from 'lodash';
 import {
   createUpdateRecoveryWalletInfo,
@@ -139,13 +144,6 @@ const SERVER_DEFAULT_0: ServerType = {
   uri: serverUris(() => {})[0].uri,
   chainName: serverUris(() => {})[0].chainName,
 } as ServerType;
-
-const activationHeight = {
-  main: 419200,
-  test: 280000,
-  regtest: 1,
-  '': 1,
-};
 
 export default function LoadingApp(props: LoadingAppProps) {
   const theme = useTheme();
@@ -189,7 +187,7 @@ export default function LoadingApp(props: LoadingAppProps) {
   const [performanceLevel, setPerformanceLevel] =
     useState<RPCPerformanceLevelEnum>(RPCPerformanceLevelEnum.Medium);
   const [blockExplorer, setBlockExplorer] = useState<BlockExplorerEnum>(
-    BlockExplorerEnum.Zcashexplorer,
+    BlockExplorerEnum.None,
   );
   const file = useMemo(
     () => ({
@@ -577,7 +575,7 @@ export class LoadingAppClass extends Component<
   }
 
   componentDidMount = async () => {
-    const netInfoState = await NetInfo.fetch();
+    const netInfoState = await fetchInitialNetworkState();
     this.setState({
       netInfo: {
         isConnected: netInfoState.isConnected,
@@ -644,11 +642,11 @@ export class LoadingAppClass extends Component<
       // Boot-time selection is silent — the app just picks the best server on
       // launch without announcing it.
       const someServerIsWorking = await this.selectServerOnBoot(
-        !!netInfoState.isConnected,
+        canAttemptNetwork(netInfoState),
       );
       console.log('some server is working?', someServerIsWorking);
     } else if (this.state.selectServer === SelectServerEnum.list) {
-      await this.selectServerOnBoot(!!netInfoState.isConnected);
+      await this.selectServerOnBoot(canAttemptNetwork(netInfoState));
     }
 
     // Second, check if a wallet exists. Do it async so the basic screen has time to render
@@ -684,7 +682,7 @@ export class LoadingAppClass extends Component<
           // if no wallet file & basic mode -> create a new wallet & go directly to history screen.
           // no seed screen.
           if (
-            !netInfoState.isConnected ||
+            !canAttemptNetwork(netInfoState) ||
             this.state.selectServer === SelectServerEnum.offline
           ) {
             this.setState({
@@ -1699,7 +1697,7 @@ export class LoadingAppClass extends Component<
     // Block only when the device is genuinely offline AND not in explicit
     // Offline mode. Offline mode is a deliberate no-server flow: the wallet is
     // created locally and simply won't sync until a server is chosen.
-    if (!this.state.netInfo.isConnected && !offline) {
+    if (this.state.netInfo.isConnected === false && !offline) {
       this.addLastSnackbar(
         this.state.translate('loadedapp.connection-error') as string,
       );
@@ -1847,9 +1845,20 @@ export class LoadingAppClass extends Component<
       walletBirthday = '0';
     }
 
-    // birthday cannot be lower than sapling activation height
+    const activationResult = await getWalletActivationHeight(
+      this.state.server.chainName,
+    );
+    const walletActivationHeight =
+      activationResult.ok && activationResult.value
+        ? Number(activationResult.value)
+        : Number.NaN;
+
+    // The native boundary derives this floor from the selected Wcash
+    // consensus parameters. Fail closed if it cannot provide a valid value.
     if (
-      Number(walletBirthday) < activationHeight[this.state.server.chainName]
+      !Number.isSafeInteger(walletActivationHeight) ||
+      walletActivationHeight < 1 ||
+      Number(walletBirthday) < walletActivationHeight
     ) {
       // no reporting button, no needed.
       createAlert(

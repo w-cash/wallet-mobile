@@ -37,6 +37,7 @@ export {
   getBalanceInfo,
   getDonationAddress,
   getLatestBlockServerInfo,
+  getWalletActivationHeight,
   getServerInfo,
   getSpendableBalanceWithAddress,
   getTotalMemobytesToAddress,

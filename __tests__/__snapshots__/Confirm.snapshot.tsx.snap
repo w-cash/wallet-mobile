@@ -202,6 +202,19 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
                 style={
                   {
                     "color": "#c3c3c3",
+                    "fontSize": 19.599999999999998,
+                    "fontWeight": "700",
+                    "margin": 0,
+                    "padding": 0,
+                  }
+                }
+              >
+                WEC
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#c3c3c3",
                     "fontSize": 28,
                     "fontWeight": "700",
                     "margin": 0,
@@ -416,6 +429,19 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
                 }
               }
             >
+              <Text
+                style={
+                  {
+                    "color": "#c3c3c3",
+                    "fontSize": 14,
+                    "fontWeight": "700",
+                    "margin": 0,
+                    "padding": 0,
+                  }
+                }
+              >
+                WEC
+              </Text>
               <Text
                 style={
                   {
@@ -722,6 +748,19 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
                   }
                 }
               >
+                <Text
+                  style={
+                    {
+                      "color": "#c3c3c3",
+                      "fontSize": 14,
+                      "fontWeight": "700",
+                      "margin": 0,
+                      "padding": 0,
+                    }
+                  }
+                >
+                  WEC
+                </Text>
                 <Text
                   style={
                     {
@@ -1052,6 +1091,19 @@ exports[`Confirm - snapshots Confirm no currency, privacy off 1`] = `
                 style={
                   {
                     "color": "#c3c3c3",
+                    "fontSize": 19.599999999999998,
+                    "fontWeight": "700",
+                    "margin": 0,
+                    "padding": 0,
+                  }
+                }
+              >
+                WEC
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#c3c3c3",
                     "fontSize": 28,
                     "fontWeight": "700",
                     "margin": 0,
@@ -1202,6 +1254,19 @@ exports[`Confirm - snapshots Confirm no currency, privacy off 1`] = `
                 }
               }
             >
+              <Text
+                style={
+                  {
+                    "color": "#c3c3c3",
+                    "fontSize": 14,
+                    "fontWeight": "700",
+                    "margin": 0,
+                    "padding": 0,
+                  }
+                }
+              >
+                WEC
+              </Text>
               <Text
                 style={
                   {
@@ -1459,6 +1524,19 @@ exports[`Confirm - snapshots Confirm no currency, privacy off 1`] = `
                   }
                 }
               >
+                <Text
+                  style={
+                    {
+                      "color": "#c3c3c3",
+                      "fontSize": 14,
+                      "fontWeight": "700",
+                      "margin": 0,
+                      "padding": 0,
+                    }
+                  }
+                >
+                  WEC
+                </Text>
                 <Text
                   style={
                     {

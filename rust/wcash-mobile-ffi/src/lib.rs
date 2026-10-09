@@ -188,6 +188,11 @@ pub fn init_logging() -> Result<String, ZingolibError> {
     Ok("OK".to_owned())
 }
 
+pub fn get_wallet_activation_height(chain_hint: String) -> Result<String, ZingolibError> {
+    let network = MobileNetwork::from_chain_hint(&chain_hint).map_err(map_adapter)?;
+    Ok(network.wallet_activation_height().to_string())
+}
+
 pub fn set_broadcast_candidates(_candidates_json: String) -> Result<String, ZingolibError> {
     Err(unsupported("alternate broadcast candidates"))
 }
@@ -727,21 +732,27 @@ unsupported_string_fn!(mixnet_bootstrap_detail, "mixnet bootstrap detail");
 mod tests {
     use super::*;
 
-    fn wait_for_sync(timeout: std::time::Duration) -> serde_json::Value {
+    fn wait_for_sync_result(timeout: std::time::Duration) -> Result<serde_json::Value, String> {
         let deadline = std::time::Instant::now() + timeout;
         loop {
             match poll_sync() {
                 Ok(value) if value.starts_with("Sync task is not complete") => {
-                    assert!(
-                        std::time::Instant::now() < deadline,
-                        "local Wcash synchronization exceeded its deadline"
-                    );
+                    if std::time::Instant::now() >= deadline {
+                        return Err("Wcash synchronization exceeded its deadline".to_owned());
+                    }
                     std::thread::sleep(std::time::Duration::from_millis(50));
                 }
-                Ok(value) => return serde_json::from_str(&value).unwrap(),
-                Err(error) => panic!("local Wcash synchronization failed: {error}"),
+                Ok(value) => {
+                    return serde_json::from_str(&value).map_err(|error| error.to_string());
+                }
+                Err(error) => return Err(error.to_string()),
             }
         }
+    }
+
+    fn wait_for_sync(timeout: std::time::Duration) -> serde_json::Value {
+        wait_for_sync_result(timeout)
+            .unwrap_or_else(|error| panic!("local Wcash synchronization failed: {error}"))
     }
 
     #[test]
@@ -769,7 +780,11 @@ mod tests {
     #[test]
     fn mainnet_is_selected_and_offline_fails_before_wallet_creation() {
         assert_eq!(
-            validate_connection_inputs("http://mainnet.zecwec.com:48234", "main", "Medium", 3)
+            get_wallet_activation_height("main".to_owned()).unwrap(),
+            "1"
+        );
+        assert_eq!(
+            validate_connection_inputs("https://mainnet.zecwec.com:443", "main", "Medium", 3)
                 .unwrap(),
             wcash_mobile_adapter::MobileNetwork::Mainnet
         );
@@ -784,7 +799,7 @@ mod tests {
     fn public_mainnet_native_boundary_scans_from_genesis() {
         let directory = tempfile::tempdir().unwrap();
         set_wallet_directory(directory.path().to_string_lossy().into_owned()).unwrap();
-        let endpoint = "http://mainnet.zecwec.com:48234";
+        let endpoint = "https://mainnet.zecwec.com:443";
         let recovery: serde_json::Value = serde_json::from_str(
             &init_new(
                 endpoint.to_owned(),
@@ -800,8 +815,19 @@ mod tests {
 
         let server: serde_json::Value = serde_json::from_str(&info_server().unwrap()).unwrap();
         assert_eq!(server["chain_name"], "main");
-        assert_eq!(run_sync().unwrap(), "Launching sync task...");
-        let result = wait_for_sync(std::time::Duration::from_secs(120));
+        let result = (1..=4)
+            .find_map(|attempt| {
+                assert_eq!(run_sync().unwrap(), "Launching sync task...");
+                match wait_for_sync_result(std::time::Duration::from_secs(900)) {
+                    Ok(result) => Some(result),
+                    Err(error) if attempt < 4 => {
+                        eprintln!("Wcash Mainnet sync attempt {attempt} will resume: {error}");
+                        None
+                    }
+                    Err(error) => panic!("Wcash Mainnet sync did not complete: {error}"),
+                }
+            })
+            .expect("the final Mainnet sync attempt must return or panic");
         let height = result["sync_complete"]["sync_end_height"]
             .as_u64()
             .expect("Mainnet scan height");
@@ -928,14 +954,21 @@ mod tests {
         // Ironwood recipient without bypassing the mobile boundary.
         let recipient_directory = fixture.path().join("recipient");
         set_wallet_directory(recipient_directory.to_string_lossy().into_owned()).unwrap();
-        init_new(
-            endpoint.to_owned(),
-            0,
-            "regtest".to_owned(),
-            "Medium".to_owned(),
-            1,
+        let recipient_recovery: serde_json::Value = serde_json::from_str(
+            &init_new(
+                endpoint.to_owned(),
+                0,
+                "regtest".to_owned(),
+                "Medium".to_owned(),
+                1,
+            )
+            .unwrap(),
         )
         .unwrap();
+        let recipient_seed = recipient_recovery["seed_phrase"]
+            .as_str()
+            .unwrap()
+            .to_owned();
         run_sync().unwrap();
         wait_for_sync(std::time::Duration::from_secs(30));
         let addresses: serde_json::Value =
@@ -1105,15 +1138,67 @@ mod tests {
             .expect("the mined mobile transaction must appear in confirmed history");
         assert_eq!(confirmed_row["status"], "confirmed");
         assert_eq!(confirmed_row["kind"], "sent");
+        let confirmed_sender_bytes = save_wallet_bytes().unwrap().unwrap();
+
+        // Restore the recipient from its recovery phrase after confirmation.
+        // This proves an incoming Ironwood note is detected from chain data
+        // and remains present after the recipient wallet is reopened.
+        let restored_recipient_directory = fixture.path().join("restored-recipient");
+        set_wallet_directory(restored_recipient_directory.to_string_lossy().into_owned()).unwrap();
+        init_from_seed(
+            recipient_seed,
+            1,
+            endpoint.to_owned(),
+            "regtest".to_owned(),
+            "Medium".to_owned(),
+            1,
+        )
+        .unwrap();
+        run_sync().unwrap();
+        wait_for_sync(std::time::Duration::from_secs(60));
+        let received_balance: serde_json::Value =
+            serde_json::from_str(&get_balance().unwrap()).unwrap();
+        assert_eq!(received_balance["total_ironwood_balance"], 100_000);
+        let received_history: serde_json::Value =
+            serde_json::from_str(&get_value_transfers().unwrap()).unwrap();
+        assert!(
+            received_history["value_transfers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|row| {
+                    row["txid"] == txid && row["kind"] == "received" && row["status"] == "confirmed"
+                })
+        );
+
+        let recipient_bytes = save_wallet_bytes().unwrap().unwrap();
+        let reopened_recipient_directory = fixture.path().join("reopened-recipient");
+        set_wallet_directory(reopened_recipient_directory.to_string_lossy().into_owned()).unwrap();
+        init_from_bytes(
+            recipient_bytes,
+            endpoint.to_owned(),
+            "regtest".to_owned(),
+            "Medium".to_owned(),
+            1,
+        )
+        .unwrap();
+        let reopened_recipient_history: serde_json::Value =
+            serde_json::from_str(&get_value_transfers().unwrap()).unwrap();
+        assert!(
+            reopened_recipient_history["value_transfers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|row| row["txid"] == txid && row["kind"] == "received")
+        );
 
         // Save and reopen solely through FFI, then prove the confirmed history
         // survives the same wallet-byte lifecycle used by the native apps.
-        let wallet_bytes = save_wallet_bytes().unwrap().unwrap();
-        validate_wallet_bytes(wallet_bytes.clone()).unwrap();
+        validate_wallet_bytes(confirmed_sender_bytes.clone()).unwrap();
         let reopened_directory = fixture.path().join("reopened-confirmed");
         set_wallet_directory(reopened_directory.to_string_lossy().into_owned()).unwrap();
         init_from_bytes(
-            wallet_bytes,
+            confirmed_sender_bytes,
             endpoint.to_owned(),
             "regtest".to_owned(),
             "Medium".to_owned(),

@@ -33,7 +33,10 @@ import Button, { ButtonTypeEnum } from '@ui/primitives/Button';
 import AppSheet from '@ui/primitives/AppSheet';
 import { ContextAppLoading } from '@app/context';
 import Header from '@ui/widgets/Header';
-import { getLatestBlockServerInfo } from '@app/walletBackend';
+import {
+  getLatestBlockServerInfo,
+  getWalletActivationHeight,
+} from '@app/walletBackend';
 import {
   GlobalConst,
   RouteEnum,
@@ -42,13 +45,6 @@ import {
 } from '@app/AppState';
 import { useFullSheetSnapPoints } from '@app/hooks/useFullSheetSnapPoints';
 import { useKeyboardHeight } from '@app/hooks/useKeyboardHeight';
-
-const activationHeight = {
-  main: 419200,
-  test: 280000,
-  regtest: 1,
-  '': 1,
-};
 
 type ImportUfvkProps = {
   onClickCancel: () => void;
@@ -68,20 +64,32 @@ const ImportUfvk: React.FunctionComponent<ImportUfvkProps> = ({
   const [seedufvkText, setSeedufvkText] = useState<string>('');
   const [birthday, setBirthday] = useState<string>('');
   const [latestBlock, setLatestBlock] = useState<number>(0);
+  const [walletActivationHeight, setWalletActivationHeight] = useState<
+    number | null
+  >(null);
   const [containerH, setContainerH] = useState<number>(0);
   const [headerH, setHeaderH] = useState<number>(0);
   const importUfvkSheetRef = useRef<BottomSheet>(null);
   const keyboardHeight = useKeyboardHeight();
 
   useEffect(() => {
-    if (!netInfo.isConnected || selectServer !== SelectServerEnum.offline) {
-      (async () => {
+    (async () => {
+      const activation = await getWalletActivationHeight(server.chainName);
+      if (activation.ok && activation.value) {
+        const height = Number(activation.value);
+        setWalletActivationHeight(
+          Number.isSafeInteger(height) && height > 0 ? height : null,
+        );
+      } else {
+        setWalletActivationHeight(null);
+      }
+      if (!netInfo.isConnected || selectServer !== SelectServerEnum.offline) {
         const resp = await getLatestBlockServerInfo(server.uri);
         if (resp.ok && resp.value) {
           setLatestBlock(Number(resp.value));
         }
-      })();
-    }
+      }
+    })();
   }, [server, selectServer, netInfo.isConnected]);
 
   useEffect(() => {
@@ -345,7 +353,7 @@ const ImportUfvk: React.FunctionComponent<ImportUfvkProps> = ({
             {selectServer !== SelectServerEnum.offline && (
               <FadeText style={{ textAlign: 'center' }}>
                 {translate('seed.birthday-no-readonly') +
-                  ` (${activationHeight[server.chainName]}, ` +
+                  ` (${walletActivationHeight ?? '--'}, ` +
                   (latestBlock ? latestBlock.toString() : '--') +
                   ')'}
               </FadeText>
@@ -386,6 +394,8 @@ const ImportUfvk: React.FunctionComponent<ImportUfvkProps> = ({
                     setBirthday('');
                   } else if (
                     Number(text) <= 0 ||
+                    (walletActivationHeight !== null &&
+                      Number(text) < walletActivationHeight) ||
                     (Number(text) > latestBlock &&
                       selectServer !== SelectServerEnum.offline)
                   ) {

@@ -43,7 +43,9 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationQueriesSchemes</key>
-	<string>wcash</string>
+	<array>
+		<string>wcash</string>
+	</array>
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0.0</string>
 	<key>LSRequiresIPhoneOS</key>

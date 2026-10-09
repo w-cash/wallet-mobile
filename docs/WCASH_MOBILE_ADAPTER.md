@@ -7,15 +7,15 @@
 - Product label: `Wcash Wallet`.
 - Native identity: `com.wcashwallet.wallet`; beta: `com.wcashwallet.wallet.beta`.
 - Production ticker copy: `WEC`; Testnet and Regtest runtime ticker: `TWC`.
-- Wcash Mainnet uses the fixed `http://mainnet.zecwec.com:48234` CompactTxStreamer endpoint, genesis `5bae12c8662a577b04ce1591af1a137c128f0cb51018a5f1622d861d1bb6fc48`, and wallet birthday 1. Testnet and feature-gated Regtest remain available.
+- Wcash Mainnet uses the authenticated `https://mainnet.zecwec.com:443` CompactTxStreamer endpoint, genesis `5bae12c8662a577b04ce1591af1a137c128f0cb51018a5f1622d861d1bb6fc48`, and the activation height derived from the selected Wcash network. Testnet and feature-gated Regtest remain available.
 
-The React screens, styles, component hierarchy, and navigation remain the upstream implementation. Against the reviewed `0d54fd5b` base, `scripts/assert-upstream-ui-parity.mjs` verifies 451 byte-identical UI files and 24 reviewed exceptions for branding, Wcash protocol copy, product assets, and fixed network configuration. The visible About product notice uses Wcash Wallet; upstream ZingoLabs/Zingo copyright and MIT attribution remain intact in the repository's license and third-party notices. Internal Zingo module, target, type, and UniFFI names remain where source compatibility requires them.
+The React screens, styles, component hierarchy, and navigation remain the upstream implementation. Against the reviewed `0d54fd5b` base, `scripts/assert-upstream-ui-parity.mjs` verifies 445 byte-identical UI files and 30 reviewed exceptions for branding, Wcash protocol copy, product assets, and fixed network configuration. The visible About product notice uses Wcash Wallet; upstream ZingoLabs/Zingo copyright and MIT attribution remain intact in the repository's license and third-party notices. Internal Zingo module, target, type, and UniFFI names remain where source compatibility requires them.
 
 The upstream `rust/lib` implementation remains byte-identical and is excluded from the active Wcash Cargo workspace. No Wcash native build or workflow compiles or packages it.
 
 ## Reproducibility gate
 
-The manifest and lockfile pin wallet-core commit `5bfd56f3ca4f332f9520908821a0b7e166b2372f` and Wolf commit `45393319d24c3c3181f98d503c97a315661b59af` through their public GitHub URLs. Cargo resolves exactly one remote-source `wcash-wallet` package and the final Wcash FFI graph contains no Nym or mixnet dependency. Wolf supplies staged transactions, retry-safe proposal cancellation, seed verification, confirmed-history summaries, and mobile sandbox-aware path validation.
+The manifest and lockfile pin wallet-core commit `f86cd05d1deb72b571b173ece3777df91c1d44e6` and Wolf commit `45393319d24c3c3181f98d503c97a315661b59af` through their public GitHub URLs. Cargo resolves exactly one remote-source `wcash-wallet` package and the final Wcash FFI graph contains no Nym or mixnet dependency. Wolf supplies staged transactions, retry-safe proposal cancellation, seed verification, confirmed-history summaries, and mobile sandbox-aware path validation.
 
 The pull-request and candidate workflows verify that the exact revisions are publicly fetchable before producing an artifact. They also reject absolute Rust paths, require exactly one `wcash-wallet` lockfile entry, and reject the obsolete Wolf revision `5b4e29980eb45e84ddab9024f530c923986d7e1e`.
 
@@ -58,13 +58,16 @@ No Wcash donation address, block explorer, or support email is approved. The ups
 
 ## Verification evidence
 
-Local source and host checks completed on 2026-09-13:
+Current TLS-candidate source and host checks completed on 2026-10-09:
 
-- UI parity: 451 byte-identical upstream files plus 24 reviewed exceptions.
-- Mainnet on 2026-09-19: the mobile FFI created a wallet at birthday 1 and scanned through block 259 against `http://mainnet.zecwec.com:48234`. The Android ARM64 production-debug APK passed unit, lint, package, signature, and emulator installation checks. Xcode 27 built the iOS XCFramework and simulator test bundle.
-- Jest: 89 suites, 622 tests, and 95 snapshots passed.
-- TypeScript, ESLint, Prettier, Rustfmt, and strict Clippy for the Wcash adapter/FFI boundary passed.
-- Rust host tests: 15 adapter tests and 5 FFI tests passed; two network tests are ignored by default.
+- UI parity: 445 byte-identical upstream files plus 30 reviewed exceptions.
+- Mainnet TLS: the public service reported Wcash Mainnet, consensus branch `d9c6a7ee`, activation height 1, and `/Wcash:6.3.0/`. Its certificate was valid for `mainnet.zecwec.com`, issued by Let's Encrypt YR2, and valid from 2026-10-09 through 2027-01-07. The mobile FFI created a fresh wallet at the consensus-derived birthday, resumed after one server-side stream cancellation, and scanned through block 23441 over `https://mainnet.zecwec.com:443`. It then validated the `wu1` receiver, balance/history responses, wallet bytes, and persisted Mainnet identity. No Mainnet transaction was broadcast.
+- Jest: 91 suites, 631 tests, and 95 snapshots passed.
+- TypeScript, ESLint, Prettier, Rustfmt, and strict Clippy with warnings denied for the Wcash adapter/FFI boundary passed.
+- Rust host tests: 15 adapter tests and 5 FFI tests passed. Six network tests remain ignored by the default host run because they require public Mainnet or the local Regtest miner/indexer; the Mainnet scan test was run explicitly and passed.
+- iOS native build: Xcode 27 built the final Wcash XCFramework from wallet-core `f86cd05d1deb72b571b173ece3777df91c1d44e6` for ARM64 devices and ARM64/x86_64 simulators. Full app signing and device installation were unavailable because this host has no Apple signing identity and no installed CocoaPods dependency tree.
+- Android was not rebuilt on this host because Java and the Android SDK are unavailable. The historical Android package evidence below does not qualify this TLS candidate.
+- Historical Mainnet on 2026-09-19: the mobile FFI created a wallet at birthday 1 and scanned through block 259 against the legacy plaintext endpoint. This run does not qualify the TLS candidate. The Android ARM64 production-debug APK passed unit, lint, package, signature, and emulator installation checks. Xcode 27 built the iOS XCFramework and simulator test bundle.
 - Live Regtest: endpoint attestation, create, restore, rejected-import preservation, sync, balance, receive, history, export, and reopen passed against `127.0.0.1:48234`.
 - Funded FFI: shield preview/confirm/broadcast/restart/mine/sync/history and send preview/confirm/broadcast/restart/mine/sync/history passed. Confirmation blocks were height 430 (`2f21a01c9f6e742bda229893117cd446bef6d80cae48074fd00bf1c929bb20b3`) and height 431 (`392df2b87dace89117b38afc30aab5d8849f89dc32d1da8e83d30d6c37143cb3`). The disposable phrase stayed in the process environment and was not logged or committed.
 - Final installed-app receive proof: a staged 100,000-zat transfer with exact 10,000-zat fee was broadcast as `df6070f45f64dd1837dc7d6c6d96be799d745b9e64c6b263854dcb109ddbabea` and confirmed in Wcash block 432 (`b5e4a53d1b2745924a8392199884c7420024850b92206344bb44d99695f94e54`). The installed wallet showed `TWC 0.001`, the Ironwood transaction detail, and `Fully Synced` at server height 432.

@@ -1152,6 +1152,15 @@ class RPCModule: NSObject {
       }
   }
 
+  @objc(getWalletActivationHeight:resolve:reject:)
+  func getWalletActivationHeight(_ chainHint: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+      DispatchQueue.global(qos: .userInitiated).async {
+        FfiOutcome.of {
+          try Zingo.getWalletActivationHeight(chainhint: chainHint)
+        }.settle(resolve: resolve, reject: reject)
+      }
+  }
+
   @objc(getMessagesInfo:resolve:reject:)
   func getMessagesInfo(_ address: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
       DispatchQueue.global(qos: .userInitiated).async {
