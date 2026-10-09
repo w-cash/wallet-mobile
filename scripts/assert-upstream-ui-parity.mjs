@@ -5,13 +5,37 @@ import { fileURLToPath } from 'node:url';
 
 const repo = dirname(dirname(fileURLToPath(import.meta.url)));
 const roots = ['app', 'screens', 'ui', 'assets'];
-const upstreamCount = 451;
+const upstreamCount = 445;
 const upstreamDigest =
-  'e259018b976e323880a3e355309bcad6fe67f62f0b97e98a60e48d6b6571a7e1';
+  '1c607a91bc9256e0a200829b6b816c733f07471087b962e3cbf2dd7c1dff68bd';
 const reviewedExceptionDigests = new Map([
   [
     'app/uris/wcashMainnetUri.ts',
-    '45a3576fe506c76b4368b06457409c8bc57737ed77d05b218c79f9ff7e92c387',
+    '484f226a6e6335d831fc2daf012b30a3495bce96895805b440660a5506d29c61',
+  ],
+  [
+    'app/LoadingApp/LoadingApp.tsx',
+    '28fd7516ad00672cff632d4f8421fac9f0f4c442f069f7e72ce50bfc8d39f816',
+  ],
+  [
+    'app/services/SettingsFileImpl.ts',
+    'ebe9e7e94d0b7120c769d396cdca6edc2d6ccc32bcf83283695463428e985a69',
+  ],
+  [
+    'screens/ImportUfvk/ImportUfvk.tsx',
+    'aabe594ca93183f1aab6624c3d2eaac47c425374b94e3b27fda02d79d679fc19',
+  ],
+  [
+    'app/RPCModule/RPCModule.ts',
+    '870d78a8e120be5367e2aa52b6643cd29ef483b9a89240f7d3768f31d3dcfe58',
+  ],
+  [
+    'app/walletBackend/index.ts',
+    '40867e41e5cab44f84bc42fbcd011eddce41333adadef2e128f679290cde990a',
+  ],
+  [
+    'app/walletBackend/utils/walletUtils.ts',
+    '929e433799cd2519cec7dc4881a8a118cec6acad98cccd6de5b2a7f44080e0fd',
   ],
   [
     'assets/img/logobig-zingo-beta.png',

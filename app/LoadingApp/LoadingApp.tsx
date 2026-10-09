@@ -31,6 +31,7 @@ import { showWalletRecovery } from '@app/services/showWalletRecovery';
 import {
   createNewWallet,
   getVersionInfo,
+  getWalletActivationHeight,
   getWalletKind,
   hasRepairableWalletFile,
   loadExistingWallet,
@@ -139,13 +140,6 @@ const SERVER_DEFAULT_0: ServerType = {
   uri: serverUris(() => {})[0].uri,
   chainName: serverUris(() => {})[0].chainName,
 } as ServerType;
-
-const activationHeight = {
-  main: 419200,
-  test: 280000,
-  regtest: 1,
-  '': 1,
-};
 
 export default function LoadingApp(props: LoadingAppProps) {
   const theme = useTheme();
@@ -1847,9 +1841,20 @@ export class LoadingAppClass extends Component<
       walletBirthday = '0';
     }
 
-    // birthday cannot be lower than sapling activation height
+    const activationResult = await getWalletActivationHeight(
+      this.state.server.chainName,
+    );
+    const walletActivationHeight =
+      activationResult.ok && activationResult.value
+        ? Number(activationResult.value)
+        : Number.NaN;
+
+    // The native boundary derives this floor from the selected Wcash
+    // consensus parameters. Fail closed if it cannot provide a valid value.
     if (
-      Number(walletBirthday) < activationHeight[this.state.server.chainName]
+      !Number.isSafeInteger(walletActivationHeight) ||
+      walletActivationHeight < 1 ||
+      Number(walletBirthday) < walletActivationHeight
     ) {
       // no reporting button, no needed.
       createAlert(

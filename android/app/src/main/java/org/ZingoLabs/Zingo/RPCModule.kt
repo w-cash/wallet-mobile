@@ -881,6 +881,14 @@ class RPCModule internal constructor(private val reactContext: ReactApplicationC
     }
 
     @ReactMethod
+    fun getWalletActivationHeight(chainHint: String, promise: Promise) {
+        FfiOutcome.settling(promise, "get_wallet_activation_height") {
+            uniffi.zingo.initLogging()
+            uniffi.zingo.getWalletActivationHeight(chainHint)
+        }
+    }
+
+    @ReactMethod
     fun getMessagesInfo(address: String, promise: Promise) {
         FfiOutcome.settling(promise, "get_messages") {
             uniffi.zingo.initLogging()

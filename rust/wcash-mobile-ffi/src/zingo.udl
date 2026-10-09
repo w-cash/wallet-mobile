@@ -34,6 +34,9 @@ namespace zingo {
   string init_logging();
 
   [Throws=ZingolibError]
+  string get_wallet_activation_height(string chainhint);
+
+  [Throws=ZingolibError]
   string set_broadcast_candidates(string candidates_json);
 
   [Throws=ZingolibError]

@@ -32,7 +32,7 @@ use zingolib::wcash::WcashRegtestRuntime;
 use zingolib::wcash::{
     ConfirmedTransactionDirection, ConfirmedTransactionKind, InitializedWallet,
     WalletBalanceSummary, WalletInfo, WcashMainnetRuntime, WcashTestnetRuntime,
-    attested_public_client,
+    attested_public_client, wallet_activation_height as consensus_wallet_activation_height,
 };
 
 const WALLET_FILE_VERSION: u64 = 700;
@@ -95,6 +95,11 @@ impl MobileNetwork {
             Self::Testnet => WalletNetwork::Testnet,
             Self::Regtest => WalletNetwork::Regtest,
         }
+    }
+
+    /// Returns the wallet activation floor from the selected Wcash consensus parameters.
+    pub fn wallet_activation_height(self) -> u32 {
+        consensus_wallet_activation_height(self.wallet_network())
     }
 
     fn envelope_byte(self) -> u8 {
@@ -380,7 +385,7 @@ impl WcashMobileAdapter {
             MobileNetwork::Testnet,
         ] {
             match attested_public_client(endpoint, network.wallet_network()).await {
-                Ok((mut client, _relay)) => {
+                Ok(mut client) => {
                     return client
                         .latest_block()
                         .await
@@ -402,10 +407,11 @@ impl WcashMobileAdapter {
         network: MobileNetwork,
     ) -> Result<String, AdapterError> {
         let wallet_network = network.wallet_network();
-        let (mut client, _relay) = attested_public_client(endpoint, wallet_network)
+        let mut client = attested_public_client(endpoint, wallet_network)
             .await
             .map_err(core_error)?;
         let latest = client.latest_block().await.map_err(core_error)?;
+        let activation_height = network.wallet_activation_height();
         Ok(serde_json::to_string_pretty(&serde_json::json!({
             "version": "0.1.0",
             "git_commit": WCASH_WALLET_CORE_REV,
@@ -413,10 +419,10 @@ impl WcashMobileAdapter {
             "vendor": "Wcash Wallet",
             "taddr_support": true,
             "chain_name": network.chain_name(),
-            "sapling_activation_height": 1,
+            "sapling_activation_height": activation_height,
             "consensus_branch_id": wallet_network.branch_id_hex(),
             "latest_block_height": latest.height,
-            "ironwood_activation_height": 1
+            "ironwood_activation_height": activation_height
         }))?)
     }
 

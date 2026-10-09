@@ -16,6 +16,7 @@ import {
 import { serverUris } from '@app/uris';
 import { isEqual } from 'lodash';
 import { RPCPerformanceLevelEnum } from '@app/walletBackend/enums/RPCPerformanceLevelEnum';
+import { migrateOfficialWcashMainnetUri } from '@app/uris/wcashMainnetUri';
 
 export default class SettingsFileImpl {
   static async getFileName() {
@@ -57,6 +58,7 @@ export default class SettingsFileImpl {
       const settings: SettingsFileClass = await JSON.parse(
         (await RNFS.readFile(fileName, GlobalConst.utf8)).toString(),
       );
+      let endpointMigrated = false;
       // If server as string is found, I need to convert to: ServerType
       // if not, I'm losing the value
       if (!settings.hasOwnProperty(SettingsNameEnum.server)) {
@@ -66,25 +68,35 @@ export default class SettingsFileImpl {
         } as ServerType;
       } else {
         if (typeof settings.server === 'string') {
+          const storedUri = settings.server;
+          const migratedUri = migrateOfficialWcashMainnetUri(
+            storedUri,
+            ChainNameEnum.mainChainName,
+          );
           const ss: ServerType = {
-            uri: settings.server,
+            uri: migratedUri,
             chainName: ChainNameEnum.mainChainName,
           };
-          const standard = serverUris(() => {}).find((s: ServerUrisType) =>
-            isEqual(
-              { uri: s.uri, chainName: s.chainName } as ServerType,
-              ss as ServerType,
-            ),
-          );
-          if (standard) {
-            settings.server = ss as ServerType;
+          endpointMigrated = migratedUri !== storedUri;
+          if (settings.selectServer === SelectServerEnum.custom) {
+            settings.server = ss;
           } else {
-            // here probably the user have a cumtom server, but we don't know
-            // what is the chainName -> we assign the default server.
-            settings.server = {
-              uri: serverUris(() => {})[0].uri,
-              chainName: serverUris(() => {})[0].chainName,
-            } as ServerType;
+            const standard = serverUris(() => {}).find((s: ServerUrisType) =>
+              isEqual(
+                { uri: s.uri, chainName: s.chainName } as ServerType,
+                ss as ServerType,
+              ),
+            );
+            if (standard) {
+              settings.server = ss as ServerType;
+            } else {
+              // An old untyped setting cannot prove the custom endpoint's
+              // network, so keep the established safe default behavior.
+              settings.server = {
+                uri: serverUris(() => {})[0].uri,
+                chainName: serverUris(() => {})[0].chainName,
+              } as ServerType;
+            }
           }
         } else {
           if (settings.server.uri && !settings.server.chainName) {
@@ -97,6 +109,14 @@ export default class SettingsFileImpl {
               uri: settings.server.uri,
               chainName: ChainNameEnum.mainChainName,
             } as ServerType;
+          }
+          const migratedUri = migrateOfficialWcashMainnetUri(
+            settings.server.uri,
+            settings.server.chainName,
+          );
+          endpointMigrated = migratedUri !== settings.server.uri;
+          if (endpointMigrated) {
+            settings.server = { ...settings.server, uri: migratedUri };
           }
         }
       }
@@ -249,6 +269,13 @@ export default class SettingsFileImpl {
       // Tor support has been removed; users on an older settings.json get rewritten transparently.
       if ((settings.currency as string) === 'USDTOR') {
         settings.currency = CurrencyEnum.USDCurrency;
+      }
+      if (endpointMigrated) {
+        await RNFS.writeFile(
+          fileName,
+          JSON.stringify(settings),
+          GlobalConst.utf8,
+        );
       }
       return settings;
     } catch (err) {

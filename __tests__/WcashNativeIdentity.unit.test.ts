@@ -55,6 +55,9 @@ test('Tests that the Wcash identity is isolated when the native apps build.', ()
   const iosBuild = readRepoFile('rust/ios/build_ios.mjs');
   const wcashUdl = readRepoFile('rust/wcash-mobile-ffi/src/zingo.udl');
   const servers = readRepoFile('app/uris/serverUris.ts');
+  const wcashMainnetUri = readRepoFile('app/uris/wcashMainnetUri.ts');
+  const loadingApp = readRepoFile('app/LoadingApp/LoadingApp.tsx');
+  const importUfvk = readRepoFile('screens/ImportUfvk/ImportUfvk.tsx');
   const dataService = readRepoFile('app/walletBackend/modules/DataService.ts');
   const loadedApp = readRepoFile('app/LoadedApp/LoadedApp.tsx');
   const utils = readRepoFile('app/utils/Utils.ts');
@@ -252,6 +255,29 @@ test('Tests that the Wcash identity is isolated when the native apps build.', ()
   expect(utils).toContain('static async getDonationAddress');
   expect(utils).toContain("return '';");
   expect(servers).toContain('uri: WCASH_MAINNET_URI');
+  expect(wcashMainnetUri).toContain(
+    "WCASH_MAINNET_URI = 'https://mainnet.zecwec.com:443'",
+  );
+  expect(adapterSource).toContain(
+    'wallet_activation_height as consensus_wallet_activation_height',
+  );
+  expect(adapterSource).toContain(
+    'consensus_wallet_activation_height(self.wallet_network())',
+  );
+  expect(ffiSource).toContain('pub fn get_wallet_activation_height');
+  expect(wcashUdl).toContain(
+    'string get_wallet_activation_height(string chainhint);',
+  );
+  expect(androidBridge).toContain('uniffi.zingo.getWalletActivationHeight');
+  expect(iosBridge).toContain('try getWalletActivationHeight(chainhint:');
+  expect(loadingApp).toContain('await getWalletActivationHeight(');
+  expect(importUfvk).toContain(
+    'await getWalletActivationHeight(server.chainName)',
+  );
+  expect(loadingApp).not.toContain('const activationHeight =');
+  expect(importUfvk).not.toContain('const activationHeight =');
+  expect(loadingApp).not.toContain('main: 419200');
+  expect(importUfvk).not.toContain('main: 419200');
   expect(servers).toContain('chainName: ChainNameEnum.mainChainName');
   expect(servers).not.toContain('zec.rocks');
   expect(servers).not.toContain('zcash-infra.com');
