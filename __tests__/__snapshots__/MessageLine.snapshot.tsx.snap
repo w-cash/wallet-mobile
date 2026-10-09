@@ -198,6 +198,19 @@ hello
                     "padding": 0,
                   }
                 }
+              >
+                WEC
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#18bd18",
+                    "fontSize": 12,
+                    "fontWeight": "700",
+                    "margin": 0,
+                    "padding": 0,
+                  }
+                }
                 testID="undefined.big-part"
               >
                  0.7765
@@ -611,6 +624,19 @@ hello
                 }
               }
             >
+              <Text
+                style={
+                  {
+                    "color": "#c3c3c3",
+                    "fontSize": 12,
+                    "fontWeight": "700",
+                    "margin": 0,
+                    "padding": 0,
+                  }
+                }
+              >
+                WEC
+              </Text>
               <Text
                 style={
                   {

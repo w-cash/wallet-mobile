@@ -182,7 +182,7 @@ exports[`NewAddressTag - snapshot NewAddressTag renders correctly 1`] = `
             resizeMode="contain"
             source={
               {
-                "testUri": "../../../assets/img/zcash-yellow.png",
+                "testUri": "../../../assets/img/logobig-zingo.png",
               }
             }
             style={
@@ -453,7 +453,7 @@ exports[`NewAddressTag - snapshot NewAddressTag renders correctly 1`] = `
               resizeMode="contain"
               source={
                 {
-                  "testUri": "../../../assets/img/zcash-yellow.png",
+                  "testUri": "../../../assets/img/logobig-zingo.png",
                 }
               }
               style={
@@ -492,7 +492,7 @@ exports[`NewAddressTag - snapshot NewAddressTag renders correctly 1`] = `
                   }
                 }
               >
-                ZEC
+                WEC
               </Text>
             </View>
             <

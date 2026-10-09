@@ -5,9 +5,9 @@ import { fileURLToPath } from 'node:url';
 
 const repo = dirname(dirname(fileURLToPath(import.meta.url)));
 const roots = ['app', 'screens', 'ui', 'assets'];
-const upstreamCount = 445;
+const upstreamCount = 441;
 const upstreamDigest =
-  '1c607a91bc9256e0a200829b6b816c733f07471087b962e3cbf2dd7c1dff68bd';
+  '9abe32ee8898b50edf3aa96a7a46ff2adb0d2e18cf3f7d8d54b92a2627c1d379';
 const reviewedExceptionDigests = new Map([
   [
     'app/uris/wcashMainnetUri.ts',
@@ -15,11 +15,19 @@ const reviewedExceptionDigests = new Map([
   ],
   [
     'app/LoadingApp/LoadingApp.tsx',
-    '28fd7516ad00672cff632d4f8421fac9f0f4c442f069f7e72ce50bfc8d39f816',
+    '3ef1a834fe03daea79393311465969d0b6b89455ae4e31e55fb92efefce9664c',
   ],
   [
     'app/services/SettingsFileImpl.ts',
-    'ebe9e7e94d0b7120c769d396cdca6edc2d6ccc32bcf83283695463428e985a69',
+    '3bb789bcfec9a02d5922625ee11b65d3a8569098e0476b5be11ac1bd2d171b28',
+  ],
+  [
+    'app/services/initialNetworkState.ts',
+    '1485510e85d282a196b9e9cfd7937e6b3cc0c88c5a8200a43c4736588faa06b9',
+  ],
+  [
+    'app/services/recoveryWalletInfo.ts',
+    'd81c617e5a62e6570b2924d999f62d17daa9a07faee1d60466832c07330ac98c',
   ],
   [
     'screens/ImportUfvk/ImportUfvk.tsx',
@@ -63,7 +71,7 @@ const reviewedExceptionDigests = new Map([
   ],
   [
     'app/LoadedApp/LoadedApp.tsx',
-    'e58ea3b9ad0a90ce13a5781925c3c1d1048cb5220235d25f22945a0a765b1906',
+    '6991dabed63124e8da9a5027d23abc6e4e89c687e34e47f8849d1187a6364224',
   ],
   [
     'app/LoadedApp/LoadedAppOptionsPanelHost.tsx',
@@ -75,23 +83,23 @@ const reviewedExceptionDigests = new Map([
   ],
   [
     'app/translations/en.json',
-    '0beb347c7e89e366acd35f339983d425e352fe636352b77a1bff9fedc37c4e40',
+    '8ff75830ad71eb395c9e1df51f4a32ab677caee2bae2457fd010ffea65af1df7',
   ],
   [
     'app/translations/es.json',
-    '77781fe852d6fd5115cce56b18187ec9a436b01bfe3d6eb2af640ef51921aed2',
+    '3c70a5c639b55b324fa0980127987133cb8a7b99013fc2ccc332bccb4f7f74b6',
   ],
   [
     'app/translations/pt.json',
-    'cd4ecaef1661e8ddb241ad2ab057d9378f44cf581d4d6634cc5b1dbc5ea3c04a',
+    '4a6d5fc1fb3329052aa309716995f43f8a4a40bc4b37b4f95f5beef98de23046',
   ],
   [
     'app/translations/ru.json',
-    'b99f3ca8881eec4ce168a9263ef570ddf6ecc846b4d74955df47197ba154821b',
+    '5455e09bfc39eaffe84dcd279d3629e97eb31612d966bf1818a9bb837fb66e8a',
   ],
   [
     'app/translations/tr.json',
-    '67aee8e1948161030fef83d06b85b8f73064a16040a1276e753b2c3d7855fbaf',
+    'f3dffa7da0e03e812d2f5b5a558ca62ca56ead03ff1d465f46cf214f1ed3907b',
   ],
   [
     'app/uris/fetchServerList.ts',
@@ -128,6 +136,14 @@ const reviewedExceptionDigests = new Map([
   [
     'ui/widgets/chainDisplayName.ts',
     'bf9b51a82de498126535d93b68c5eb79bf21d11442b0cb1a1034f9fce2d3d567',
+  ],
+  [
+    'ui/widgets/ChainSelect.tsx',
+    'c864e579519888fe67e0c9f0c81491030f9b2b7f9ef0a6f2bb5376fc37d3dff3',
+  ],
+  [
+    'ui/widgets/ZecAmount.tsx',
+    '36dae1b7ba02a60a474f39eceaced84bff36764255fad8e07f4fb0bfe0a8cda7',
   ],
 ]);
 

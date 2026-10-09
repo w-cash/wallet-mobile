@@ -58,7 +58,7 @@ export default class SettingsFileImpl {
       const settings: SettingsFileClass = await JSON.parse(
         (await RNFS.readFile(fileName, GlobalConst.utf8)).toString(),
       );
-      let endpointMigrated = false;
+      let settingsMigrated = false;
       // If server as string is found, I need to convert to: ServerType
       // if not, I'm losing the value
       if (!settings.hasOwnProperty(SettingsNameEnum.server)) {
@@ -77,7 +77,8 @@ export default class SettingsFileImpl {
             uri: migratedUri,
             chainName: ChainNameEnum.mainChainName,
           };
-          endpointMigrated = migratedUri !== storedUri;
+          const endpointMigrated = migratedUri !== storedUri;
+          settingsMigrated ||= endpointMigrated;
           if (settings.selectServer === SelectServerEnum.custom) {
             settings.server = ss;
           } else {
@@ -114,7 +115,8 @@ export default class SettingsFileImpl {
             settings.server.uri,
             settings.server.chainName,
           );
-          endpointMigrated = migratedUri !== settings.server.uri;
+          const endpointMigrated = migratedUri !== settings.server.uri;
+          settingsMigrated ||= endpointMigrated;
           if (endpointMigrated) {
             settings.server = { ...settings.server, uri: migratedUri };
           }
@@ -253,9 +255,9 @@ export default class SettingsFileImpl {
         // by default medium
         settings.performanceLevel = RPCPerformanceLevelEnum.Medium;
       }
-      if (!settings.hasOwnProperty(SettingsNameEnum.blockExplorer)) {
-        // by default medium
-        settings.blockExplorer = BlockExplorerEnum.Zcashexplorer;
+      if (settings.blockExplorer !== BlockExplorerEnum.None) {
+        settings.blockExplorer = BlockExplorerEnum.None;
+        settingsMigrated = true;
       }
       if (!settings.hasOwnProperty(SettingsNameEnum.nym)) {
         settings.nym = false;
@@ -270,7 +272,7 @@ export default class SettingsFileImpl {
       if ((settings.currency as string) === 'USDTOR') {
         settings.currency = CurrencyEnum.USDCurrency;
       }
-      if (endpointMigrated) {
+      if (settingsMigrated) {
         await RNFS.writeFile(
           fileName,
           JSON.stringify(settings),

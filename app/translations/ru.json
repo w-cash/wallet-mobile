@@ -355,18 +355,6 @@
     ],
     "blockexplorers": [
       {
-        "value": "Zcashexplorer",
-        "text": "ZcashExplorer.App"
-      },
-      {
-        "value": "Cipherscan",
-        "text": "CipherScan.App"
-      },
-      {
-        "value": "Zexplorer",
-        "text": "ZExplorer.App"
-      },
-      {
         "value": "None",
         "text": "None"
       }

@@ -243,7 +243,7 @@ export default function LoadedApp(props: LoadedAppProps) {
   const [performanceLevel, setPerformanceLevel] =
     useState<RPCPerformanceLevelEnum>(RPCPerformanceLevelEnum.Medium);
   const [blockExplorer, setBlockExplorer] = useState<BlockExplorerEnum>(
-    BlockExplorerEnum.Zcashexplorer,
+    BlockExplorerEnum.None,
   );
   const [nym, setNym] = useState<boolean>(false);
   const [zenniesDonationAddress, setZenniesDonationAddress] =

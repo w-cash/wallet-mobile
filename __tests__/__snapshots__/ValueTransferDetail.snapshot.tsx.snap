@@ -404,6 +404,19 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
               style={
                 {
                   "color": "#c3c3c3",
+                  "fontSize": 19.599999999999998,
+                  "fontWeight": "700",
+                  "margin": 0,
+                  "padding": 0,
+                }
+              }
+            >
+              WEC
+            </Text>
+            <Text
+              style={
+                {
+                  "color": "#c3c3c3",
                   "fontSize": 28,
                   "fontWeight": "700",
                   "margin": 0,
@@ -691,6 +704,19 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
                   }
                 }
               >
+                <Text
+                  style={
+                    {
+                      "color": "#c3c3c3",
+                      "fontSize": 14,
+                      "fontWeight": "700",
+                      "margin": 0,
+                      "padding": 0,
+                    }
+                  }
+                >
+                  WEC
+                </Text>
                 <Text
                   style={
                     {
@@ -1201,6 +1227,19 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
               style={
                 {
                   "color": "#c3c3c3",
+                  "fontSize": 19.599999999999998,
+                  "fontWeight": "700",
+                  "margin": 0,
+                  "padding": 0,
+                }
+              }
+            >
+              WEC
+            </Text>
+            <Text
+              style={
+                {
+                  "color": "#c3c3c3",
                   "fontSize": 28,
                   "fontWeight": "700",
                   "margin": 0,
@@ -1466,6 +1505,19 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
                       "padding": 0,
                     }
                   }
+                >
+                  WEC
+                </Text>
+                <Text
+                  style={
+                    {
+                      "color": "#c3c3c3",
+                      "fontSize": 14,
+                      "fontWeight": "700",
+                      "margin": 0,
+                      "padding": 0,
+                    }
+                  }
                   testID="undefined.big-part"
                 >
                    0.0001
@@ -1711,6 +1763,19 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
                   }
                 }
               >
+                <Text
+                  style={
+                    {
+                      "color": "#c3c3c3",
+                      "fontSize": 14,
+                      "fontWeight": "700",
+                      "margin": 0,
+                      "padding": 0,
+                    }
+                  }
+                >
+                  WEC
+                </Text>
                 <Text
                   style={
                     {

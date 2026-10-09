@@ -187,7 +187,7 @@ export default function LoadingApp(props: LoadingAppProps) {
   const [performanceLevel, setPerformanceLevel] =
     useState<RPCPerformanceLevelEnum>(RPCPerformanceLevelEnum.Medium);
   const [blockExplorer, setBlockExplorer] = useState<BlockExplorerEnum>(
-    BlockExplorerEnum.Zcashexplorer,
+    BlockExplorerEnum.None,
   );
   const file = useMemo(
     () => ({

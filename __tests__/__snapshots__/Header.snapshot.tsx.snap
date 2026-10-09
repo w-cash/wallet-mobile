@@ -178,6 +178,19 @@ exports[`Component Header - test Header Complex - snapshot 1`] = `
                 style={
                   {
                     "color": "#c3c3c3",
+                    "fontSize": 25.2,
+                    "fontWeight": "700",
+                    "margin": 0,
+                    "padding": 0,
+                  }
+                }
+              >
+                WEC
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#c3c3c3",
                     "fontSize": 36,
                     "fontWeight": "700",
                     "margin": 0,

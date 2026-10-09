@@ -19,6 +19,7 @@ jest.mock('@app/uris', () => ({
 import * as RNFS from 'react-native-fs';
 
 import {
+  BlockExplorerEnum,
   ChainNameEnum,
   SelectServerEnum,
   SettingsFileClass,
@@ -37,6 +38,7 @@ const storedSettings = (uri: string, chainName: ChainNameEnum) =>
   ({
     firstInstall: false,
     version: null,
+    blockExplorer: BlockExplorerEnum.None,
     selectServer: SelectServerEnum.custom,
     server: { uri, chainName },
   }) as SettingsFileClass;
@@ -86,3 +88,24 @@ test.each([
     expect(writeFile).not.toHaveBeenCalled();
   },
 );
+
+test('disables an inherited Zcash explorer selection', async () => {
+  readFile.mockResolvedValue(
+    JSON.stringify({
+      ...storedSettings(
+        'https://wallet.example:443',
+        ChainNameEnum.mainChainName,
+      ),
+      blockExplorer: BlockExplorerEnum.Zcashexplorer,
+    }),
+  );
+
+  const settings = await SettingsFileImpl.readSettings();
+
+  expect(settings.blockExplorer).toBe(BlockExplorerEnum.None);
+  expect(writeFile).toHaveBeenCalledWith(
+    '/wallet/settings.json',
+    expect.stringContaining('"blockExplorer":"None"'),
+    'utf8',
+  );
+});
