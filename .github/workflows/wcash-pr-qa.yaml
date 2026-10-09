@@ -41,6 +41,9 @@ jobs:
           node scripts/ci/verify-workflow-actions.mjs
           node scripts/ci/verify-wcash-dependencies.mjs --remote
 
+      - name: Validate public documentation
+        run: node scripts/ci/verify-public-docs.mjs
+
       - name: Install JavaScript dependencies
         run: |
           corepack enable
