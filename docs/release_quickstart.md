@@ -1,13 +1,16 @@
 # Wcash Wallet mobile build and release gate
 
-This repository retains the upstream Zingo Mobile interface. The reviewed candidate profile uses Wcash Local Regtest. The visible product name is `Wcash Wallet`.
+This repository retains parts of the upstream Zingo Mobile interface. Wcash
+builds use the product name `Wcash Wallet`.
 
 | Channel    | iOS bundle ID                 | Android application ID        | Display name   |
 | ---------- | ----------------------------- | ----------------------------- | -------------- |
 | Production | `com.wcashwallet.wallet`      | `com.wcashwallet.wallet`      | `Wcash Wallet` |
 | Beta       | `com.wcashwallet.wallet.beta` | `com.wcashwallet.wallet.beta` | `Wcash Wallet` |
 
-Wcash Mainnet packaging remains disabled until the consensus identity, addresses, transaction signing domain, public endpoint, and release policy are approved.
+The repository can package Mainnet developer candidates. A supported consumer
+release remains blocked on authenticated transport, qualification, production
+signing, publisher authentication, and store review.
 
 ## Pull request checks
 
@@ -19,21 +22,50 @@ Wcash Mainnet packaging remains disabled until the consensus identity, addresses
 
 The pull request APK and both iOS ZIPs remain available for three days. The device ZIP proves the app links for `iphoneos`; installation on a phone still requires Apple signing and provisioning.
 
-## Unsigned candidates
+## Developer candidates
 
-Run **Wcash mobile unsigned candidate** from GitHub Actions on the reviewed commit or release tag. The workflow records `regtest` in the filename and manifest and verifies the reviewed Local Regtest profile. Enable a Testnet candidate only after the repository contains an approved Testnet server profile and its lifecycle test passes.
+Run **Wcash mobile unsigned candidate** from GitHub Actions on a reviewed
+commit or a `wcash-<version>-<build>` release tag. The workflow records
+`mainnet` in the filename and manifest. It builds these files:
 
 The workflow produces one aggregate artifact for 14 days:
 
 ```text
-Wcash-Wallet-regtest-<version>-<build>-<sha>-android-arm64-prodDebug.apk
-Wcash-Wallet-regtest-<version>-<build>-<sha>-ios-arm64-simulator-unsigned.zip
-Wcash-Wallet-regtest-<version>-<build>-<sha>-ios-arm64-device-compile-unsigned.zip
+Wcash-Wallet-mainnet-<version>-<build>-<sha>-android-arm64-prodDebug.apk
+Wcash-Wallet-mainnet-<version>-<build>-<sha>-ios-arm64-simulator-unsigned.zip
+Wcash-Wallet-mainnet-<version>-<build>-<sha>-ios-arm64-device-compile-unsigned.zip
 MANIFEST.json
 SHA256SUMS
 ```
 
-The manifest records the full source revision, network, version, build number, compiler versions, platform, signing state, file size, and SHA-256 digest. The workflow checks every digest before upload.
+The manifest records the full source revision, network, version, build number,
+compiler versions, platform, signing state, file size, and SHA-256 digest. The
+workflow checks every digest before upload. A tag run also publishes
+`SOURCE.txt` and creates a GitHub prerelease.
+
+The Android artifact uses the `prodDebug` build type and the public Android
+debug certificate. The iOS archives have signing disabled. The device archive
+proves that the source links for `iphoneos`; it requires Apple signing and
+provisioning before installation on an iPhone. These packages are engineering
+artifacts rather than a supported consumer release.
+
+The latest public candidate is
+[`wcash-2.0.23-317`](https://github.com/w-cash/wallet-mobile/releases/tag/wcash-2.0.23-317).
+It was built from
+[`f136a09d7b4959ee800dcef6d4cb9a0b4b39b1da`](https://github.com/w-cash/wallet-mobile/commit/f136a09d7b4959ee800dcef6d4cb9a0b4b39b1da).
+Its
+[`MANIFEST.json`](https://github.com/w-cash/wallet-mobile/releases/download/wcash-2.0.23-317/MANIFEST.json),
+[`SHA256SUMS`](https://github.com/w-cash/wallet-mobile/releases/download/wcash-2.0.23-317/SHA256SUMS),
+and
+[`SOURCE.txt`](https://github.com/w-cash/wallet-mobile/releases/download/wcash-2.0.23-317/SOURCE.txt)
+are release assets. Its manifest records Rust 1.91.0 and Xcode 27.0. The
+current candidate workflow pins Xcode 26.6, so a new run will record a
+different Apple toolchain from this published candidate.
+
+The SHA-256 values detect corruption or modification relative to the checksum
+file. They do not authenticate the publisher without a trusted signature or
+another trusted root. The release tag has no cryptographic signature. The
+current release includes no signed provenance or SBOM.
 
 ## Immutable inputs
 
@@ -65,9 +97,18 @@ The workflows pin each external action to a commit from these reviewed releases:
 
 ## Production signing
 
-`.github/workflows/mobile-production-signing.yaml` uses the protected `wcash-mobile-production` GitHub environment. Configure required reviewers on that environment before adding credentials. The current gate validates an exact Wcash release tag and an explicit confirmation phrase, then stops before signing.
+`.github/workflows/mobile-production-signing.yaml` uses the protected
+`wcash-mobile-production` GitHub environment. Configure required reviewers on
+that environment before adding credentials. The current gate validates an
+exact Wcash release tag and an explicit confirmation phrase, then exits before
+signing.
 
-Keep Android prodRelease and AAB work in this protected workflow. Keep Apple distribution signing and App Store packaging in this protected workflow. Candidate and pull request jobs use prodDebug Android signing and signing-disabled iOS simulator builds. No workflow uploads to Google Play or App Store Connect.
+Keep Android prodRelease and AAB work in this protected workflow. Keep Apple
+distribution signing and App Store packaging in this protected workflow.
+Candidate and pull request jobs use prodDebug Android signing and
+signing-disabled iOS builds. The repository has no Google Play, TestFlight, or
+Apple App Store release. No workflow uploads to Google Play or App Store
+Connect.
 
 ## Release preparation
 
@@ -77,7 +118,12 @@ Update the production versions with one command:
 yarn release:prod:prep 2.0.24 318
 ```
 
-Review the generated diff, commit it, and create the suggested `wcash-<version>-<build>` tag. Run the unsigned candidate workflow on that tag. The candidate workflow does not accept beta tags because its metadata, Android flavor, and iOS scheme are production-channel inputs. Promote a source revision only after Regtest and public Testnet lifecycle tests pass.
+Review the generated diff, commit it, and create the suggested
+`wcash-<version>-<build>` tag. Run the unsigned candidate workflow on that tag.
+The candidate workflow accepts the production application identity and creates
+a developer prerelease. Promotion requires the documented Regtest and public
+Testnet lifecycle tests, authenticated Mainnet transport, production signing,
+and release review.
 
 ## Local checks
 
@@ -86,6 +132,7 @@ From the repository root:
 ```sh
 node scripts/ci/verify-wcash-dependencies.mjs
 node scripts/ci/verify-workflow-actions.mjs
+node scripts/ci/verify-public-docs.mjs
 node scripts/assert-upstream-ui-parity.mjs
 yarn test --runInBand
 yarn typecheck
