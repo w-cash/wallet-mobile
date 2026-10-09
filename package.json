@@ -22,6 +22,7 @@
     "visual:compare": "tsx visual/compare-ref.mts",
     "visual:accept": "tsx visual/accept.mts",
     "test": "node scripts/assert-upstream-ui-parity.mjs && jest --verbose",
+    "docs:check": "node scripts/ci/verify-public-docs.mjs",
     "test:upstream-ui-parity": "node scripts/assert-upstream-ui-parity.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --fix",
