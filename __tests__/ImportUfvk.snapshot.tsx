@@ -7,6 +7,7 @@ import React from 'react';
 
 import { render, waitFor } from '@testing-library/react-native';
 import ImportUfvk from '@screens/ImportUfvk';
+import RPCModule from '@app/RPCModule';
 import {
   ContextAppLoadedProvider,
   defaultAppContextLoaded,
@@ -34,5 +35,25 @@ describe('Component ImportUfvk - test', () => {
       expect(JSON.stringify(importUfvk.toJSON())).toContain('(1, --)'),
     );
     expect(importUfvk.toJSON()).toMatchSnapshot();
+  });
+
+  test('Tests that the import form uses the native activation height.', async () => {
+    const nativeActivation = jest
+      .spyOn(RPCModule, 'getWalletActivationHeight')
+      .mockResolvedValueOnce('73');
+    const state = { ...defaultAppContextLoaded };
+    state.translate = mockTranslate;
+    state.info = mockInfo;
+    state.totalBalance = mockTotalBalance;
+    const importUfvk = render(
+      <ContextAppLoadedProvider value={state}>
+        <ImportUfvk onClickCancel={jest.fn()} onClickOK={jest.fn()} />
+      </ContextAppLoadedProvider>,
+    );
+
+    await waitFor(() =>
+      expect(JSON.stringify(importUfvk.toJSON())).toContain('(73, --)'),
+    );
+    expect(nativeActivation).toHaveBeenLastCalledWith(state.server.chainName);
   });
 });

@@ -1950,6 +1950,20 @@ mod tests {
     }
 
     #[test]
+    fn activation_heights_follow_the_locked_wallet_core() {
+        for network in [
+            MobileNetwork::Mainnet,
+            MobileNetwork::Testnet,
+            MobileNetwork::Regtest,
+        ] {
+            assert_eq!(
+                network.wallet_activation_height(),
+                consensus_wallet_activation_height(network.wallet_network())
+            );
+        }
+    }
+
+    #[test]
     fn synchronized_status_has_the_scanned_range_expected_by_upstream_ui() {
         assert_eq!(
             synchronized_scan_ranges(187, 426, true),
