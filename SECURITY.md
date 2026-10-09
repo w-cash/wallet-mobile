@@ -1,51 +1,53 @@
-# Security Policy
+# Wcash Wallet Mobile security policy
 
-## Supported Versions
+## Supported versions
 
-| Platform | Store                                                                                                   | Supported |
-| -------- | ------------------------------------------------------------------------------------------------------- | --------- |
-| iOS      | [App Store](https://apps.apple.com/app/zingo/id1668209531)                                              | ✓         |
-| Android  | [Google Play](https://play.google.com/store/apps/details?id=org.ZingoLabs.Zingo)                        | ✓         |
+Wcash Wallet Mobile is a developer preview. The project has no supported
+consumer version on Google Play, TestFlight, or the Apple App Store. Current
+GitHub prerelease packages receive no consumer support or security SLA.
 
-Only the latest released version on each platform receives security fixes. Older versions are not backported.
+The latest published package is the unsupported Mainnet candidate
+[`wcash-2.0.23-317`](https://github.com/w-cash/wallet-mobile/releases/tag/wcash-2.0.23-317).
+Its Android APK is debug-signed and its iOS archives are unsigned. The
+candidate also uses a plaintext Mainnet wallet service.
 
-## Reporting a Vulnerability
+## Private vulnerability reports
 
-If you believe you have found a security vulnerability in Zingo, please **do not open a public GitHub issue**. Instead, report it privately:
+Use
+[GitHub Private Vulnerability Reporting](https://github.com/w-cash/wallet-mobile/security/advisories/new)
+for vulnerabilities in this repository. Include the affected source revision,
+platform, impact, reproduction steps, and a proof of concept when available.
 
-**Email:** zingodisclosure@proton.me
+The repository owner must enable and verify Private Vulnerability Reporting in
+the repository security settings. The owner must test that the link presents a
+private report form before announcing this route as operational. If the form
+is unavailable, do not put vulnerability details in a public issue. Wcash has
+no published private security mailbox.
 
-Please include as much of the following as possible:
+Do not include a recovery phrase, spending key, full viewing key, wallet file,
+real address, transaction material, or other wallet secret in a report. Use a
+fresh Regtest wallet and sanitized logs for reproduction.
 
-- A clear description of the vulnerability and its potential impact
-- Steps to reproduce or a proof-of-concept
-- Affected version(s) and platform(s)
-- Any suggested mitigations
-
-## What to Expect
-
-- **Acknowledgement** within 72 hours of your report.
-- **Status update** within 7 days with an initial assessment.
-- **Coordinated disclosure** — we will work with you to agree on a disclosure timeline before any public announcement.
-- Credit in the release notes if you wish to be acknowledged.
+The project has not published guaranteed acknowledgement or remediation times.
+The maintainers should agree on a coordinated disclosure date with the
+reporter after they receive and assess a private report.
 
 ## Scope
 
-Issues considered in scope:
+Security reports can cover:
 
-- Private key or seed phrase exposure
-- Unauthorized fund transfer or transaction signing
-- Authentication or authorization bypasses
-- Cryptographic weaknesses in wallet or shielded transaction handling
-- Remote code execution or data exfiltration affecting app users
+- recovery phrase, key, wallet file, or sensitive metadata exposure
+- unauthorized signing, transaction mutation, or fund movement
+- network identity, endpoint authentication, or transport failures
+- cross-network address or transaction acceptance
+- dependency, native interface, application link, or platform storage flaws
+- release artifact, signing, update, or build provenance failures
 
-Out of scope:
+Report an upstream flaw to this repository when it affects the Wcash build.
+The Wcash maintainers can coordinate a fix with the upstream project. They
+must obtain the reporter's permission before sharing private report details or
+identity outside the Wcash security team.
 
-- Denial of service against the lightwalletd server
-- Issues in third-party dependencies not directly introduced by this project
-- Social engineering or phishing attacks
-- Reports already publicly known
-
-## Disclosure Policy
-
-We follow a **90-day coordinated disclosure** timeline. If a fix cannot be delivered within that window we will communicate the reasons and agree on an extension with the reporter.
+Use [public GitHub issues](https://github.com/w-cash/wallet-mobile/issues) for
+non-sensitive bugs and build problems. Follow [`SUPPORT.md`](./SUPPORT.md)
+before attaching diagnostics.

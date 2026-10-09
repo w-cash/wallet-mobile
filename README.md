@@ -1,171 +1,115 @@
-# Zingo Android and iOS apps
+# Wcash Wallet Mobile
 
-Zingo Mobile is a shielded Zcash light-client wallet for Android and iOS, built with React Native and powered by the [Zingolib](https://github.com/zingolabs/zingolib) Rust SDK.
+This repository contains the Android and iOS Wcash Wallet applications. The
+apps use React Native with a Rust wallet backend derived from Zingo Mobile and
+Zingolib.
 
-App Store: [https://apps.apple.com/app/zingo/id1668209531](https://apps.apple.com/app/zingo/id1668209531)
+> **Developer preview:** Wcash Wallet Mobile has no supported consumer release.
+> The published Mainnet packages are engineering candidates. They are unsafe
+> for material funds.
 
-Google Play: [https://play.google.com/store/apps/details?id=org.ZingoLabs.Zingo](https://play.google.com/store/apps/details?id=org.ZingoLabs.Zingo)
+## Current package status
 
-# Security Vulnerability Disclosure
+The latest published candidate is
+[`wcash-2.0.23-317`](https://github.com/w-cash/wallet-mobile/releases/tag/wcash-2.0.23-317),
+built from
+[`f136a09d7b4959ee800dcef6d4cb9a0b4b39b1da`](https://github.com/w-cash/wallet-mobile/commit/f136a09d7b4959ee800dcef6d4cb9a0b4b39b1da)
+for Wcash Mainnet.
 
-If you believe you have discovered a security issue, please contact us at:
+| Package | Status | Installation |
+| --- | --- | --- |
+| Android ARM64 `prodDebug` APK | Developer candidate signed with the public Android debug certificate | Manual installation for development and review |
+| iOS ARM64 simulator ZIP | Unsigned compile and test artifact | Xcode simulator use by developers |
+| iOS ARM64 device ZIP | Unsigned compile and test artifact | Requires Apple signing and provisioning before device installation |
 
-zingodisclosure@proton.me
+The Android package uses the production application ID, but its `prodDebug`
+build type and public debug certificate provide no production publisher
+identity. The iOS archives are not ordinary installable consumer downloads.
+Wcash has no Google Play, TestFlight, or Apple App Store release.
 
-## Building The App
+The candidate connects to the hard-coded Mainnet wallet service at
+`http://mainnet.zecwec.com:48234`. This plaintext endpoint provides no TLS
+server authentication or transport encryption. Authenticated Mainnet
+transport remains a release blocker.
 
- Please see the platform specific [iOS](./docs/ios_developer_quickstart.md) and [Android](./docs/android_developer_quickstart.md) "quickstart" documentation.
+## Release records and verification
 
-## Releasing
+The candidate release contains these records:
 
-Zingo ships as two parallel apps from this repo:
+- [`MANIFEST.json`](https://github.com/w-cash/wallet-mobile/releases/download/wcash-2.0.23-317/MANIFEST.json) records the network, version, build, full source revision, toolchains, artifact sizes, signing state, and SHA-256 values.
+- [`SHA256SUMS`](https://github.com/w-cash/wallet-mobile/releases/download/wcash-2.0.23-317/SHA256SUMS) contains the SHA-256 value for each package.
+- [`SOURCE.txt`](https://github.com/w-cash/wallet-mobile/releases/download/wcash-2.0.23-317/SOURCE.txt) identifies the release tag, source revision, and package status.
 
-- **Production** (`org.ZingoLabs.Zingo`) — App Store + Play Production.
-- **Beta** (`org.ZingoLabs.Zingo.Beta`) — TestFlight External + Play Open Testing.
+The published package digests are:
 
-Both share the same JS bundle and Rust libs; only the native shell differs
-(bundle ID, display name, icon with `BETA` band). Version/build bumps are
-scoped per channel via:
+| Package | SHA-256 |
+| --- | --- |
+| Android ARM64 `prodDebug` APK | `ad41c67ed080d9a394bb80dacd653c195678144db261732fa967ab93d1b2fcc4` |
+| iOS ARM64 device compile ZIP | `3a8987229ba2e7f2c64a99f18fc833c0e953368078b44ff61502d1ebccf81fa9` |
+| iOS ARM64 simulator ZIP | `0debbc9dee7fb708e2095f153085bdf0014dde67a55e5926b8b904dc35f9f8d4` |
 
-```bash
-yarn release:prod:prep <version> <build>
-yarn release:beta:prep <version> <build>
+After downloading a package and `SHA256SUMS`, calculate its digest and compare
+the complete hexadecimal value with the matching line:
+
+```sh
+shasum -a 256 <downloaded-package>
 ```
 
-Create the tag **before** rebuilding the Rust libs: the About screen shows a
-`git describe` descriptor baked into the native lib at cargo build time, so a
-`.so`/xcframework compiled before the tag ships advertising the previous one.
-See [Release order](./docs/release_quickstart.md#release-order-tag-first-then-rebuild-the-rust-libs).
+The checksum detects corruption or modification relative to the published
+checksum file. It does not authenticate the publisher without a trusted
+signature or another trusted root. The release tag has no cryptographic
+signature. This release has no signed provenance or SBOM. The Android debug
+signature and the unsigned iOS archives provide no production publisher
+authentication.
 
-Pushing a `zingo-<version>-<build>` or `zingo-beta-<version>-<build>` tag
-triggers a CI workflow that builds the 4 ABI APKs + a universal APK from
-source on the tagged commit and publishes them to a fresh GitHub Release.
+## Build and test
 
-Full step-by-step for both stores, signing setup, and the underlying iOS/Android
-flavor architecture: see [docs/release_quickstart.md](./docs/release_quickstart.md).
+Install Node.js 22, Yarn 1.22.22, and Rust 1.91.0. Platform builds also need
+the toolchains listed in
+[`docs/release_quickstart.md`](./docs/release_quickstart.md).
 
-## Testing
-### Prerequisites
-Integration tests and end-to-end tests require a regtest server. On linux hosts, these may be run
-locally by installing the lightwalletd, zcashd and zcash-cli binaries
-(https://github.com/zingolabs/zingolib#regtest). From the `rust/android/regtest/bin/` directory run: <br />
-`ln -s path/to/lightwalletd/binary path/to/zcashd/binary path/to/zcash-cli/binary ./` <br />
-From the `rust/android/lightwalletd_bin` directory run: <br />
-`ln -s path/to/lightwalletd/binary ./`
+Run the source checks from the repository root:
 
-Alternatively, integration tests and end-to-end tests can be run on non-linux hosts with Regchest
-(https://github.com/zingolabs/zingo-regchest). Regchest manages the zcash/lightwalletd regtest
-network in a docker container. Before running tests, pull the latest Regchest image from docker: <br />
-`docker pull zingodevops/regchest:013`
+```sh
+corepack enable
+yarn install --frozen-lockfile
+yarn docs:check
+yarn test --runInBand
+yarn typecheck
+yarn lint:check
+yarn prettier:check
+```
 
-### Yarn Tests
-1. From the root directory, run: <br />
-   `yarn test`
+Run the Wcash adapter and native interface tests from `rust/`:
 
-### Memory Benchmark
-Peak heap per wallet-file path, on a connected Android device or emulator.
+```sh
+cargo test --locked -p wcash-mobile-adapter -p wcash-mobile-ffi -p rustios
+cargo clippy --locked -p wcash-mobile-adapter -p wcash-mobile-ffi --all-targets -- -D warnings
+```
 
-- `yarn bench:memory`: measure and compare against `scripts/wallet_memory_baseline.json`, non-zero exit on a regression
-- `yarn bench:memory --report`: measure only
-- `yarn bench:memory:accept`: record a new baseline
+Use the
+[`Android developer guide`](./docs/android_developer_quickstart.md) and
+[`iOS developer guide`](./docs/ios_developer_quickstart.md) for local builds.
+The local live suites require a Wcash Regtest service.
 
-### Integration Tests
-These exercise the Rust ↔ Kotlin/Swift FFI boundary against a regtest network.
+## Source relationships
 
-The Android suite (`rust/android/tests/integration_tests.rs`) runs on every PR
-via the `android-ubuntu-integration-test-ci` workflow. The iOS suite
-(`rust/ios/tests/integration_tests.rs`) exists but its `cargo nextest run`
-invocation is currently commented out in `ios-integration-test.yaml`, so it
-does **not** gate PRs — you can still run it locally with the same nextest
-commands.
+The Wcash mobile boundary depends on immutable revisions of
+[`w-cash/wallet-core`](https://github.com/w-cash/wallet-core) and
+[`w-cash/wolf`](https://github.com/w-cash/wolf). The exact revisions are in
+`rust/Cargo.toml` and `rust/Cargo.lock`.
 
-1. Create quick-boot snapshots to speed up AVD launch times. From the root directory, run: <br />
-   `./scripts/android_integration_tests.sh -a x86_64 -s` <br />
-   `./scripts/android_integration_tests.sh -a x86 -s` <br />
-   By default, this uses default API 29 system images. Other images may be used for testing
-   by specifying the api level and target. However, using other images with the cargo test runner
-   is still under development.
-2. To run the integration tests. From the `rust` directory, run: <br />
-   `cargo nextest run android_integration` <br />
-   Specify to run specific ABI: <br />
-   `cargo nextest run android_integration::x86_64` <br />
-   `cargo nextest run android_integration::x86_32` <br />
-   `cargo nextest run android_integration::arm64` <br />
-   `cargo nextest run android_integration::arm32` <br />
-   Specify to run a specific test on all ABIs: <br />
-   `cargo nextest run test_name` <br />
-   Specify to run a specific ABI and test: <br />
-   `cargo nextest run android_integration::x86_64::test_name`
+This project retains work from
+[`zingolabs/zingo-mobile`](https://github.com/zingolabs/zingo-mobile),
+[`zingolabs/zingolib`](https://github.com/zingolabs/zingolib), and other Zcash
+projects. Their names remain in internal paths and dependencies where the fork
+preserves compatibility. Upstream product pages, stores, and support routes do
+not serve Wcash Wallet users.
 
-To run tests with Regchest, add the `--features regchest` flag, for example: <br />
-`cargo nextest run android_integration --features regchest`
+Read [`SECURITY.md`](./SECURITY.md) for private vulnerability reporting and
+[`SUPPORT.md`](./SUPPORT.md) for public support and diagnostic redaction.
 
-For more information on running integration tests on non-default AVDs, run: <br />
-`./scripts/android_integration_tests.sh -h` <br />
-Without the cargo test runner these emulated android devices will not be able to connect to a
-lightwalletd/zcashd regtest network. Therefore, only tests in the "Offline Testsuite" may be tested.
+## License
 
-### End-to-End Tests (Rust nextest, Android)
-Drives the Android app from Rust against a regtest network. Lives in
-`rust/android/tests/e2e_tests.rs`. Currently Android-only.
-
-0. Note there needs to be a lightwalletd in rust/android/lightwalletd_bin
-1. Launch the emulated AVD by clicking the 'play' icon in Android Studio's `Device Manager`.
-   Alternatively, connect to a physical device. See previous section 'Launching the app' for more
-   details.
-2. In a terminal, run: <br />
-   `yarn start`
-3. Create quick-boot snapshots to speed up AVD launch times. From the root directory, run: <br />
-   `./scripts/e2e_tests.sh -a x86_64 -s` <br />
-   `./scripts/e2e_tests.sh -a x86 -s` <br />
-   By default, this uses default API 29 system images. Other images may be used for testing
-   by specifying the api level and target. However, using other images with the cargo test runner
-   is still under development.
-4. In a separate terminal, from the `rust` directory, run all tests: <br />
-   `cargo nextest run e2e`
-   Specify to run specific ABI: <br />
-   `cargo nextest run e2e::x86_64` <br />
-   `cargo nextest run e2e::x86_32` <br />
-   `cargo nextest run e2e::arm64` <br />
-   `cargo nextest run e2e::arm32` <br />
-   Specify to run a specific ABI and test: <br />
-   `cargo nextest run e2e::x86_64::test_name`
-
-### End-to-End Tests (Maestro UI flows)
-[Maestro](https://maestro.mobile.dev/) drives the released app from the
-outside, asserting on the rendered UI. Flows live in `.maestro/` as YAML
-(`01_basic_new_wallet.yaml`, etc.). Runs nightly in CI via
-`.github/workflows/maestro-nightly.yaml` against both Android and iOS;
-this is the e2e suite that PR reviewers and releases lean on going
-forward.
-
-To run locally:
-
-1. Install the Maestro CLI: <br />
-   `curl -Ls "https://get.maestro.mobile.dev" | bash` (puts the binary in `~/.maestro/bin`)
-
-2. Boot an emulator/simulator and install the app you want to test against
-   (debug or release). Maestro talks to whatever device is currently
-   selected by `adb` / `xcrun simctl`.
-
-3. From the repo root: <br />
-   `maestro test .maestro/`
-   Or run a single flow: <br />
-   `maestro test .maestro/01_basic_new_wallet.yaml`
-
-The legacy Detox suite under `e2e/*.test.js` is no longer wired to CI or
-to any `yarn` script. It is being phased out in favour of Maestro and
-should not be relied on; new e2e coverage should land as Maestro flows.
-
-# Storybook & visual review
-Browse components in isolation with Storybook (on-device via
-`yarn storybook:ios`/`storybook:android`, web via `yarn storybook:web`).
-
-The web build powers per-PR visual regression: `yarn visual` captures and
-diffs components and animations against a baseline. See
-[visual/README.md](./visual/README.md) for the harness, and
-[.github/CLOUDFLARE.md](./.github/CLOUDFLARE.md) for the Cloudflare Pages deploy
-that publishes the review site.
-
-# Troubleshooting
-For notes on known issues and problems, see the [trouble-shooting notes](./TROUBLESHOOTING.md).
+The repository uses the MIT License. See [`LICENSE`](./LICENSE) for the
+preserved copyright and terms.
