@@ -102,6 +102,7 @@ import {
   resolveTriggerGate,
 } from '@app/services/gateController';
 import ShowAddressAlertAsync from '@app/services/showAddressAlertAsync';
+import { fetchInitialNetworkState } from '@app/services/initialNetworkState';
 import {
   createUpdateRecoveryWalletInfo,
   removeRecoveryWalletInfo,
@@ -900,7 +901,7 @@ export class LoadedAppClass extends Component<
   }
 
   componentDidMount = async () => {
-    const netInfoState = await NetInfo.fetch();
+    const netInfoState = await fetchInitialNetworkState();
     this.setState({
       netInfo: {
         isConnected: netInfoState.isConnected,

@@ -103,6 +103,10 @@ import {
   retireSentinelEntries,
 } from '@app/services/gateController';
 import selectingServer from '@app/services/selectingServer';
+import {
+  canAttemptNetwork,
+  fetchInitialNetworkState,
+} from '@app/services/initialNetworkState';
 import { isEqual } from 'lodash';
 import {
   createUpdateRecoveryWalletInfo,
@@ -571,7 +575,7 @@ export class LoadingAppClass extends Component<
   }
 
   componentDidMount = async () => {
-    const netInfoState = await NetInfo.fetch();
+    const netInfoState = await fetchInitialNetworkState();
     this.setState({
       netInfo: {
         isConnected: netInfoState.isConnected,
@@ -638,11 +642,11 @@ export class LoadingAppClass extends Component<
       // Boot-time selection is silent — the app just picks the best server on
       // launch without announcing it.
       const someServerIsWorking = await this.selectServerOnBoot(
-        !!netInfoState.isConnected,
+        canAttemptNetwork(netInfoState),
       );
       console.log('some server is working?', someServerIsWorking);
     } else if (this.state.selectServer === SelectServerEnum.list) {
-      await this.selectServerOnBoot(!!netInfoState.isConnected);
+      await this.selectServerOnBoot(canAttemptNetwork(netInfoState));
     }
 
     // Second, check if a wallet exists. Do it async so the basic screen has time to render
@@ -678,7 +682,7 @@ export class LoadingAppClass extends Component<
           // if no wallet file & basic mode -> create a new wallet & go directly to history screen.
           // no seed screen.
           if (
-            !netInfoState.isConnected ||
+            !canAttemptNetwork(netInfoState) ||
             this.state.selectServer === SelectServerEnum.offline
           ) {
             this.setState({
@@ -1693,7 +1697,7 @@ export class LoadingAppClass extends Component<
     // Block only when the device is genuinely offline AND not in explicit
     // Offline mode. Offline mode is a deliberate no-server flow: the wallet is
     // created locally and simply won't sync until a server is chosen.
-    if (!this.state.netInfo.isConnected && !offline) {
+    if (this.state.netInfo.isConnected === false && !offline) {
       this.addLastSnackbar(
         this.state.translate('loadedapp.connection-error') as string,
       );

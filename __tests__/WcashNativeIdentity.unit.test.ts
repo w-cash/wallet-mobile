@@ -134,6 +134,9 @@ test('Tests that the Wcash identity is isolated when the native apps build.', ()
   expect(androidManifest).toContain('android:scheme="wcash"');
   expect(androidManifest).not.toContain('android:scheme="zcash"');
   expect(iosInfo).toContain('<string>wcash</string>');
+  expect(iosInfo).toMatch(
+    /<key>LSApplicationQueriesSchemes<\/key>\s*<array>\s*<string>wcash<\/string>\s*<\/array>/,
+  );
   expect(iosInfo).not.toContain('<string>zcash</string>');
   expect(iosInfo).toContain('Wcash Wallet needs access to the camera');
   expect(iosLaunch).toContain('text="Wcash Wallet"');
@@ -269,7 +272,7 @@ test('Tests that the Wcash identity is isolated when the native apps build.', ()
     'string get_wallet_activation_height(string chainhint);',
   );
   expect(androidBridge).toContain('uniffi.zingo.getWalletActivationHeight');
-  expect(iosBridge).toContain('try getWalletActivationHeight(chainhint:');
+  expect(iosBridge).toContain('try Zingo.getWalletActivationHeight(chainhint:');
   expect(loadingApp).toContain('await getWalletActivationHeight(');
   expect(importUfvk).toContain(
     'await getWalletActivationHeight(server.chainName)',

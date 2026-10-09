@@ -1156,7 +1156,7 @@ class RPCModule: NSObject {
   func getWalletActivationHeight(_ chainHint: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
       DispatchQueue.global(qos: .userInitiated).async {
         FfiOutcome.of {
-          try getWalletActivationHeight(chainhint: chainHint)
+          try Zingo.getWalletActivationHeight(chainhint: chainHint)
         }.settle(resolve: resolve, reject: reject)
       }
   }
